@@ -1,0 +1,10 @@
+# executable
+src/quantum
+src/output
+src/output.*
+
+# folders
+objs/
+
+# files
+main.qtm
