@@ -4,8 +4,11 @@
  * September 24, 2023
  */
 
-// TODO: continue series at (Episode 2) : https://www.youtube.com/watch?v=vcSijrRsrY0
-// TODO: fix conditional jump in tokens_to_asm()
+/*** Compilation & Running ***/
+// make
+// ./quantum <input.qtm>
+// ./output
+
 
 #include <ctype.h>
 #include <stdio.h>
@@ -14,7 +17,7 @@
 
 #include "linked_list.h"
 
-#define BUFFER_CAPACITY 2048
+#define BUFFER_CAPACITY 4096
 
 // convert string into list of tokens
 LinkedList *tokenize(LinkedList *tokens, const char *str) {
@@ -73,7 +76,6 @@ LinkedList *tokenize(LinkedList *tokens, const char *str) {
 }
 
 char *tokens_to_asm(LinkedList *tokens, char *buffer) {
-    strcat(buffer, "; Dylan Gilson\n; dylan.gilson@outlook.com\n; September 24, 2023\n");
     strcat(buffer, "global _start:\n\n_start:\n"); // default x86-64 boiler plate code
 
     for (int i = 0; i < tokens->count; i++) {
