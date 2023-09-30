@@ -5,6 +5,7 @@ src/output.*
 
 # folders
 objs/
+.vscode/
 
 # files
 main.qtm

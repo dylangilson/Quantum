@@ -45,7 +45,8 @@ void push_tail(LinkedList *list, void *value, NodeType node_type, TokenType toke
 Node *peek_at(LinkedList list, int index);
 Node *peek_head(LinkedList list);
 Node *peek_tail(LinkedList list);
-Node *popHead(LinkedList *list);
+Node *pop_at(LinkedList *list, int index);
+Node *pop_head(LinkedList *list);
 Node *pop_tail(LinkedList *list);
 void free_list(LinkedList *list);
 bool search(LinkedList list, void *value);

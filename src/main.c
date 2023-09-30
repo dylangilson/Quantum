@@ -9,99 +9,14 @@
 // ./quantum <input.qtm>
 // ./output
 
-
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "linked_list.h"
-
-#define BUFFER_CAPACITY 4096
-
-// convert string into list of tokens
-LinkedList *tokenize(LinkedList *tokens, const char *str) {
-    char buffer[BUFFER_CAPACITY]; // file contents
-    memset(buffer, 0, sizeof(buffer)); // clear buffer
-
-    for (int i = 0; str[i] != 0; i++) {
-        char c = str[i]; // get character
-        
-        if (isalpha(c)) {
-            strncat(buffer, &c, 1); // add character to buffer
-            i++;
-
-            // while character is alphanumeric append to buffer
-            while (isalnum(str[i])) {
-                strncat(buffer, &str[i], 1);
-                i++;
-            }
-
-            i--;
-
-            // push token to token list
-            if (strncmp(buffer, "exit", strlen(buffer)) == 0) {
-                push_tail(tokens, NULL, TOKEN, EXIT); // append token
-                memset(buffer, 0, sizeof(buffer)); // clear buffer
-            } else {
-                fprintf(stderr, "Invalid expression\n");
-                exit(EXIT_FAILURE);
-            }
-        } else if (isdigit(c)) {
-            strncat(buffer, &c, 1); // add character to buffer
-            i++;
-
-            // while character is digit append to buffer
-            while (isdigit(str[i])) {
-                strncat(buffer, &str[i], 1);
-                i++;
-            }
-
-            i--;
-
-            long temp = atoi(buffer);
-            push_tail(tokens, (int *)temp, INTEGER, INTEGER_LITERAL); // append number
-            memset(buffer, 0, sizeof(buffer)); // clear buffer
-        } else if (c == ';') {
-            push_tail(tokens, NULL, TOKEN, SEMICOLON); // append semicolon
-        } else if (isspace(c)) {
-            continue; // ignore whitespace        
-        } else {
-            fprintf(stderr, "Invalid expression\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    return tokens;
-}
-
-char *tokens_to_asm(LinkedList *tokens, char *buffer) {
-    strcat(buffer, "global _start:\n\n_start:\n"); // default x86-64 boiler plate code
-
-    for (int i = 0; i < tokens->count; i++) {
-        Node *node = at(*tokens, i);
-
-        if (node->token.token_type == EXIT) {
-            if (i + 1 < tokens->count && peek_at(*tokens, i + 1)->token.token_type == INTEGER_LITERAL) {
-                if (i + 2 < tokens->count && peek_at(*tokens, i + 2)->token.token_type == SEMICOLON) {
-                    strcat(buffer, "    mov rax, 60\n"); // 60 -> exit syscall
-                    strcat(buffer, "    mov rdi, ");
-
-                    // concatenate exit value
-                    int length = snprintf(NULL, 0, "%ld", (long)peek_at(*tokens, i + 1)->token.value);
-                    char* value_as_string = malloc(sizeof(char) * (length + 1));
-                    snprintf(value_as_string, length + 1, "%ld", (long)peek_at(*tokens, i + 1)->token.value);
-                    strcat(buffer, value_as_string);
-                    free(value_as_string);
-
-                    strcat(buffer, "\n    syscall\n");
-                }
-            }
-        }
-    }
-
-    return buffer;
-}
+#include "tokenizer.h"
+#include "parser.h"
+#include "generator.h"
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -129,12 +44,29 @@ int main(int argc, char *argv[]) {
 
     fclose(file); // close file
 
+    Tokenizer *tokenizer = create_tokenizer(file_buffer);
     LinkedList *tokens = create_list();
-    tokens = tokenize(tokens, file_buffer);
+    tokens = tokenize(tokenizer, tokens);
+
+    free(tokenizer);
+
+    Parser *parser = create_parser(tokens);
+    NodeExit *tree = parse_tree(parser);
+
+    free(parser);
+
+    if (tree == NULL) {
+        fprintf(stderr, "No exit statement found\n");
+        return EXIT_FAILURE;
+    }
 
     char *assembly = (char *)malloc(sizeof(char) * BUFFER_CAPACITY);
     memset(assembly, 0, BUFFER_CAPACITY);
-    tokens_to_asm(tokens, assembly);
+    Generator *generator = create_generator(*tree);
+    assembly = generate(generator, assembly);
+
+    free(tree);
+    free(generator);
 
     FILE *output = fopen("output.asm", "w");
 
