@@ -108,33 +108,6 @@ Node *peek_tail(LinkedList list) {
 	return list.tail;
 }
 
-// pop node at given index
-Node *pop_at(LinkedList *list, int index) {
-	if (is_empty(*list)) {
-		fprintf(stderr, "Attempting to pop at on empty list\n");
-		return false;
-	}
-
-	if (index > list->count) {
-		fprintf(stderr, "Index larger than list length\n");
-		return NULL;
-	}
-
-	Node *temp_a = list->head;
-	Node *temp_b = temp_a->next;
-
-	for (int i = 0; i < index - 1; i++) {
-		temp_b = temp_b->next;
-		temp_a = temp_a->next;
-	}
-
-	Node *ret = temp_b;
-
-	temp_a->next = temp_b->next;
-
-	return ret;
-}
-
 // pop node at head of list
 Node *pop_head(LinkedList *list) {
 	if (is_empty(*list)) {
