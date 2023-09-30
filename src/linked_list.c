@@ -9,10 +9,11 @@
 
 #include <linked_list.h>
 
-// NOTE: pushing a value to the list that is not a pointer requires a cast to a pointer with this syntax : pushHead(list, (int *)<VALUE>, INTEGER, INTEGERR_LITERAL);
+// NOTE: pushing a value to the list that is not a pointer requires a cast to a pointer with this syntax : push_head(list, (int *)<VALUE>, INTEGER, INTEGERR_LITERAL);
 // NOTE: reading a value popped from the list has syntax : int *output = popHead(list); printf("%ld", (long)output);
+// NOTE: when using a linked list, always free nodes after popping
 
-Node *createNode(void *value, NodeType node_type, TokenType token_type) {
+Node *create_node(void *value, NodeType node_type, TokenType token_type) {
 	Node *temp = (Node *)malloc(sizeof(Node));
 	temp->token.value = value;
 	temp->token.token_type = token_type;
@@ -22,7 +23,7 @@ Node *createNode(void *value, NodeType node_type, TokenType token_type) {
 	return temp;
 }
 
-LinkedList *createList() {
+LinkedList *create_list() {
 	LinkedList *list = (LinkedList *)malloc(sizeof(LinkedList));
 	list->head = NULL;
 	list->tail = NULL;
@@ -31,39 +32,39 @@ LinkedList *createList() {
 	return list;
 }
 
-bool isEmpty(LinkedList list) {
+bool is_empty(LinkedList list) {
 	return (list.count == 0);
 }
 
-void pushHead(LinkedList *list, void *value, NodeType node_type, TokenType token_type) {
-	if (isEmpty(*list)) {
-		list->head = createNode(value, node_type, token_type);
+void push_head(LinkedList *list, void *value, NodeType node_type, TokenType token_type) {
+	if (is_empty(*list)) {
+		list->head = create_node(value, node_type, token_type);
 		list->tail = list->head;
 	} else {
 		Node *temp = list->head;
-		list->head = createNode(value, node_type, token_type);
+		list->head = create_node(value, node_type, token_type);
 		list->head->next = temp;
 	}
 
 	list->count++;
 }
 
-void pushTail(LinkedList *list, void *value, NodeType node_type, TokenType token_type) {
-	if (isEmpty(*list)) {
-		list->head = createNode(value, node_type, token_type);
+void push_tail(LinkedList *list, void *value, NodeType node_type, TokenType token_type) {
+	if (is_empty(*list)) {
+		list->head = create_node(value, node_type, token_type);
 		list->tail = list->head;
 	} else {
 		Node* temp = list->tail;
-		list->tail = createNode(value, node_type, token_type);
+		list->tail = create_node(value, node_type, token_type);
 		temp->next = list->tail;
 	}
 
 	list->count++;
 }
 
-Node *at(LinkedList list, int index) {
-	if (isEmpty(list)) {
-		fprintf(stderr, "Attempting to peek head on empty list\n");
+Node *peek_at(LinkedList list, int index) {
+	if (is_empty(list)) {
+		fprintf(stderr, "Attempting to peek on empty list\n");
 		return NULL;
 	}
 
@@ -81,8 +82,8 @@ Node *at(LinkedList list, int index) {
 	return ptr;
 }
 
-Node *peekHead(LinkedList list) {
-	if (isEmpty(list)) {
+Node *peek_head(LinkedList list) {
+	if (is_empty(list)) {
 		fprintf(stderr, "Attempting to peek head on empty list\n");
 		return NULL;
 	}
@@ -90,8 +91,8 @@ Node *peekHead(LinkedList list) {
 	return list.head;
 }
 
-Node *peekTail(LinkedList list) {
-	if (isEmpty(list)) {
+Node *peek_tail(LinkedList list) {
+	if (is_empty(list)) {
 		fprintf(stderr, "Attempting to peek tail on empty list\n");
 		return NULL;
 	}
@@ -100,7 +101,7 @@ Node *peekTail(LinkedList list) {
 }
 
 Node *popHead(LinkedList *list) {
-	if (isEmpty(*list)) {
+	if (is_empty(*list)) {
 		fprintf(stderr, "Attempting to pop head on empty list\n");
 		return NULL;
 	}
@@ -120,8 +121,8 @@ Node *popHead(LinkedList *list) {
 	return ret;
 }
 
-Node *popTail(LinkedList *list) {
-	if (isEmpty(*list)) {
+Node *pop_tail(LinkedList *list) {
+	if (is_empty(*list)) {
 		fprintf(stderr, "Attempting to pop tail on empty list\n");
 		return NULL;
 	}
@@ -146,7 +147,7 @@ Node *popTail(LinkedList *list) {
 	return ret;
 }
 
-void freeList(LinkedList *list) {
+void free_list(LinkedList *list) {
 	if (list != NULL) {
 		Node *ptr = list->head;
 
@@ -176,7 +177,7 @@ void freeList(LinkedList *list) {
 }
 
 bool search(LinkedList list, void *value) {
-	if (isEmpty(list)) {
+	if (is_empty(list)) {
 		fprintf(stderr, "Attempting to search on empty list\n");
 		return false;
 	}

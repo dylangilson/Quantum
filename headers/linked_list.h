@@ -37,15 +37,16 @@ typedef struct LinkedList {
     int count;
 } LinkedList;
 
-Node *createNode(void *value, NodeType type, TokenType token_type);
-LinkedList* createList();
-bool isEmpty(LinkedList list);
-void pushHead(LinkedList *list, void *value, NodeType node_type, TokenType token_type);
-void pushTail(LinkedList *list, void *value, NodeType node_type, TokenType token_type);
-Node *at(LinkedList list, int index);
-Node *peekHead(LinkedList list);
-Node *peekTail(LinkedList list);
+Node *create_node(void *value, NodeType type, TokenType token_type);
+LinkedList *create_list();
+bool is_empty(LinkedList list);
+void push_head(LinkedList *list, void *value, NodeType node_type, TokenType token_type);
+void push_tail(LinkedList *list, void *value, NodeType node_type, TokenType token_type);
+Node *peek_at(LinkedList list, int index);
+Node *peek_head(LinkedList list);
+Node *peek_tail(LinkedList list);
 Node *popHead(LinkedList *list);
-Node *popTail(LinkedList *list);
-void freeList(LinkedList *list);
+Node *pop_tail(LinkedList *list);
+void free_list(LinkedList *list);
+bool search(LinkedList list, void *value);
 void display_token_types(LinkedList list);

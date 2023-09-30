@@ -41,7 +41,7 @@ LinkedList *tokenize(LinkedList *tokens, const char *str) {
 
             // push token to token list
             if (strncmp(buffer, "exit", strlen(buffer)) == 0) {
-                pushTail(tokens, NULL, TOKEN, EXIT); // append token
+                push_tail(tokens, NULL, TOKEN, EXIT); // append token
                 memset(buffer, 0, sizeof(buffer)); // clear buffer
             } else {
                 fprintf(stderr, "Invalid expression\n");
@@ -60,10 +60,10 @@ LinkedList *tokenize(LinkedList *tokens, const char *str) {
             i--;
 
             long temp = atoi(buffer);
-            pushTail(tokens, (int *)temp, INTEGER, INTEGER_LITERAL); // append number
+            push_tail(tokens, (int *)temp, INTEGER, INTEGER_LITERAL); // append number
             memset(buffer, 0, sizeof(buffer)); // clear buffer
         } else if (c == ';') {
-            pushTail(tokens, NULL, TOKEN, SEMICOLON); // append semicolon
+            push_tail(tokens, NULL, TOKEN, SEMICOLON); // append semicolon
         } else if (isspace(c)) {
             continue; // ignore whitespace        
         } else {
@@ -82,15 +82,15 @@ char *tokens_to_asm(LinkedList *tokens, char *buffer) {
         Node *node = at(*tokens, i);
 
         if (node->token.token_type == EXIT) {
-            if (i + 1 < tokens->count && at(*tokens, i + 1)->token.token_type == INTEGER_LITERAL) {
-                if (i + 2 < tokens->count && at(*tokens, i + 2)->token.token_type == SEMICOLON) {
+            if (i + 1 < tokens->count && peek_at(*tokens, i + 1)->token.token_type == INTEGER_LITERAL) {
+                if (i + 2 < tokens->count && peek_at(*tokens, i + 2)->token.token_type == SEMICOLON) {
                     strcat(buffer, "    mov rax, 60\n"); // 60 -> exit syscall
                     strcat(buffer, "    mov rdi, ");
 
                     // concatenate exit value
-                    int length = snprintf(NULL, 0, "%ld", (long)at(*tokens, i + 1)->token.value);
+                    int length = snprintf(NULL, 0, "%ld", (long)peek_at(*tokens, i + 1)->token.value);
                     char* value_as_string = malloc(sizeof(char) * (length + 1));
-                    snprintf(value_as_string, length + 1, "%ld", (long)at(*tokens, i + 1)->token.value);
+                    snprintf(value_as_string, length + 1, "%ld", (long)peek_at(*tokens, i + 1)->token.value);
                     strcat(buffer, value_as_string);
                     free(value_as_string);
 
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 
     fclose(file); // close file
 
-    LinkedList *tokens = createList();
+    LinkedList *tokens = create_list();
     tokens = tokenize(tokens, file_buffer);
 
     char *assembly = (char *)malloc(sizeof(char) * BUFFER_CAPACITY);
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
     fputs(assembly, output);
     fclose(output);
 
-    freeList(tokens);
+    free_list(tokens);
     free(assembly);
 
     system("nasm -felf64 output.asm && ld output.o -o output");
