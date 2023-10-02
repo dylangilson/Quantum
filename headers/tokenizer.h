@@ -8,14 +8,12 @@
 
 #include "linked_list.h"
 
-#define BUFFER_CAPACITY 4096
-
 typedef struct Tokenizer {
     const char *src;
-    size_t index;
+    int index;
 } Tokenizer;
 
 Tokenizer *create_tokenizer(const char *src);
-char peek_tokenizer(Tokenizer tokenizer, size_t count);
+char peek_tokenizer(Tokenizer tokenizer, int offset);
 char consume_tokenizer(Tokenizer *tokenzier);
 LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens);

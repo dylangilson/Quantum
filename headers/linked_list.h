@@ -8,10 +8,17 @@
 
 #include "bool.h"
 
+#define BUFFER_CAPACITY 4096
+
 typedef enum TokenType {
     EXIT,
     INTEGER_LITERAL,
-    SEMICOLON
+    SEMICOLON,
+    OPEN_PARENTHESIS,
+    CLOSE_PARENTHESIS,
+    IDENTIFIER,
+    LET,
+    EQUALS
 } TokenType;
 
 typedef struct Token {

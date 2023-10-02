@@ -21,12 +21,12 @@ Tokenizer *create_tokenizer(const char *src) {
 }
 
 // peek at character that is count indices ahead of current index
-char peek_tokenizer(Tokenizer tokenizer, size_t count) {
-    if (tokenizer.index + count > strlen(tokenizer.src)) {
+char peek_tokenizer(Tokenizer tokenizer, int offset) {
+    if (tokenizer.index + offset >= (int)strlen(tokenizer.src)) {
         return '\0'; // empty string
-    } else {
-        return tokenizer.src[tokenizer.index];
     }
+    
+    return tokenizer.src[tokenizer.index + offset];
 }
 
 // consume character at current index of tokenizer
@@ -41,22 +41,25 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
 
     while(peek_tokenizer(*tokenizer, 0) != '\0') {
         if (isalpha(peek_tokenizer(*tokenizer, 0))) {
-            char c = consume_tokenizer(tokenizer); // get charcater
+            char c = consume_tokenizer(tokenizer); // get character
             strncat(buffer, &c, 1); // append character to buffer
             
-            // while character is alphanumeric -> append to buffer
+            // while character is alphanumeric -> append character to buffer
             while (peek_tokenizer(*tokenizer, 0) != '\0' && isalnum(peek_tokenizer(*tokenizer, 0))) {
                 char c = consume_tokenizer(tokenizer); // get character
                 strncat(buffer, &c, 1);
             }
 
-            // push token to token list
+            // check for key words
             if (strncmp(buffer, "exit", strlen(buffer)) == 0) {
-                push_tail(tokens, NULL, TOKEN, EXIT); // append token
+                push_tail(tokens, NULL, TOKEN, EXIT); // append exit token
+                memset(buffer, 0, sizeof(buffer)); // clear buffer
+            } else if (strncmp(buffer, "let", strlen(buffer)) == 0) {
+                push_tail(tokens, NULL, TOKEN, LET); // append let token
                 memset(buffer, 0, sizeof(buffer)); // clear buffer
             } else {
-                fprintf(stderr, "Invalid expression\n");
-                exit(EXIT_FAILURE);
+                push_tail(tokens, buffer, TOKEN, IDENTIFIER); // append identifier token
+                memset(buffer, 0, sizeof(buffer)); // clear buffer
             }
         } else if (isdigit(peek_tokenizer(*tokenizer, 0))) {
             char c = consume_tokenizer(tokenizer); // get character
@@ -71,8 +74,17 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             long temp = atoi(buffer); // convert string to number
             push_tail(tokens, (int *)temp, INTEGER, INTEGER_LITERAL); // append number to buffer
             memset(buffer, 0, sizeof(buffer)); // clear buffer
+        } else if (peek_tokenizer(*tokenizer, 0) == '(') {
+            consume_tokenizer(tokenizer); // consume '('
+            push_tail(tokens, NULL, TOKEN, OPEN_PARENTHESIS); // append open parenthesis
+        } else if (peek_tokenizer(*tokenizer, 0) == ')'){
+            consume_tokenizer(tokenizer); // consume ')'
+            push_tail(tokens, NULL, TOKEN, CLOSE_PARENTHESIS); // append close parenthesis
+        } else if (peek_tokenizer(*tokenizer, 0) == '='){
+            consume_tokenizer(tokenizer); // consume '='
+            push_tail(tokens, NULL, TOKEN, EQUALS); // append close parenthesis
         } else if (peek_tokenizer(*tokenizer, 0) == ';') {
-            consume_tokenizer(tokenizer);
+            consume_tokenizer(tokenizer); // consume ';'
             push_tail(tokens, NULL, TOKEN, SEMICOLON); // append semicolon
         } else if (isspace(peek_tokenizer(*tokenizer, 0))) {
             consume_tokenizer(tokenizer); // ignore whitespace

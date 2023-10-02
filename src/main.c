@@ -51,21 +51,23 @@ int main(int argc, char *argv[]) {
     free(tokenizer);
 
     Parser *parser = create_parser(tokens);
-    NodeExit *tree = parse_tree(parser);
+    NodeProgram *program = parse_program(parser);
 
     free(parser);
 
-    if (tree == NULL) {
-        fprintf(stderr, "No exit statement found\n");
+    if (program == NULL) {
+        fprintf(stderr, "Invalid program\n");
         return EXIT_FAILURE;
     }
 
-    char *assembly = (char *)malloc(sizeof(char) * BUFFER_CAPACITY);
+    char *assembly = (char *)malloc(BUFFER_CAPACITY * sizeof(char));
     memset(assembly, 0, BUFFER_CAPACITY);
-    Generator *generator = create_generator(*tree);
-    assembly = generate(generator, assembly);
+    Generator *generator = create_generator(program);
+    generate_program(generator, assembly);
 
-    free(tree);
+    free(program);
+
+    free(generator->buffer);
     free(generator);
 
     FILE *output = fopen("output.asm", "w");

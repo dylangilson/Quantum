@@ -9,8 +9,11 @@
 #include "parser.h"
 
 typedef struct Generator {
-    NodeExit root;
+    NodeProgram *program;
+    char *buffer;
 } Generator;
 
-Generator *create_generator(NodeExit root);
-char *generate(Generator *generator, char *buffer);
+Generator *create_generator(NodeProgram *program);
+void generate_expression(NodeExpression *expression, char *buffer);
+void generate_statement(NodeStatement *statement, char *buffer);
+void generate_program(Generator *generator, char *buffer);
