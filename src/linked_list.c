@@ -6,19 +6,22 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <linked_list.h>
 
-// NOTE: pushing a value to the list that is not a pointer requires a cast to a pointer with this syntax : push_head(list, (int *)<VALUE>, INTEGER, INTEGERR_LITERAL);
+// NOTE: pushing a value to the list that is not a pointer requires a cast to a pointer with this syntax : push_head(list, (int *)<VALUE>, INTEGER_LITERAL);
 // NOTE: reading a value popped from the list has syntax : int *output = pop_head(list); printf("%ld", (long)output);
 // NOTE: when using a linked list, always free nodes after popping
 
 // create node
-Node *create_node(void *value, NodeType node_type, TokenType token_type) {
+Node *create_node(void *value, TokenType token_type) {
+	Token *token = (Token *)malloc(sizeof(Token));
+	token->value = value;
+	token->token_type = token_type;
+
 	Node *temp = (Node *)malloc(sizeof(Node));
-	temp->token.value = value;
-	temp->token.token_type = token_type;
-	temp->node_type = node_type;
+	temp->token = token;
 	temp->next = NULL;
 
 	return temp;
@@ -40,13 +43,13 @@ bool is_empty(LinkedList list) {
 }
 
 // push node to head of list
-void push_head(LinkedList *list, void *value, NodeType node_type, TokenType token_type) {
+void push_head(LinkedList *list, void *value, TokenType token_type) {
 	if (is_empty(*list)) {
-		list->head = create_node(value, node_type, token_type);
+		list->head = create_node(value, token_type);
 		list->tail = list->head;
 	} else {
 		Node *temp = list->head;
-		list->head = create_node(value, node_type, token_type);
+		list->head = create_node(value, token_type);
 		list->head->next = temp;
 	}
 
@@ -54,13 +57,13 @@ void push_head(LinkedList *list, void *value, NodeType node_type, TokenType toke
 }
 
 // push node to tail of list
-void push_tail(LinkedList *list, void *value, NodeType node_type, TokenType token_type) {
+void push_tail(LinkedList *list, void *value, TokenType token_type) {
 	if (is_empty(*list)) {
-		list->head = create_node(value, node_type, token_type);
+		list->head = create_node(value, token_type);
 		list->tail = list->head;
 	} else {
 		Node* temp = list->tail;
-		list->tail = create_node(value, node_type, token_type);
+		list->tail = create_node(value, token_type);
 		temp->next = list->tail;
 	}
 
@@ -68,7 +71,7 @@ void push_tail(LinkedList *list, void *value, NodeType node_type, TokenType toke
 }
 
 // peek at node at given index
-Node *peek_at(LinkedList list, int index) {
+Node *peek_at(LinkedList list, size_t index) {
 	if (is_empty(list)) {
 		fprintf(stderr, "Attempting to peek on empty list\n");
 		return NULL;
@@ -81,7 +84,7 @@ Node *peek_at(LinkedList list, int index) {
 
 	Node *ptr = list.head;
 
-	for (int i = 0; i < index; i++) {
+	for (size_t i = 0; i < index; i++) {
 		ptr = ptr->next;
 	}
 
@@ -144,7 +147,7 @@ Node *pop_tail(LinkedList *list) {
 		list->head = NULL;
 		list->tail = NULL;
 	} else {
-		for (int i = 2; i < list->count; i++) {
+		for (size_t i = 2; i < list->count; i++) {
 			ptr = ptr->next;
 		}
 
@@ -168,6 +171,7 @@ void free_list(LinkedList *list) {
 			if (ptr->next != NULL) {
 				temp = ptr->next;
 			} else {
+				free(ptr->token);
 				free(ptr);
 
 				list->count--;
@@ -175,6 +179,7 @@ void free_list(LinkedList *list) {
 				break;
 			}
 
+			free(ptr->token);
 			free(ptr);
 
 			ptr = temp;
@@ -185,53 +190,4 @@ void free_list(LinkedList *list) {
 
 		list = NULL;
 	}
-}
-
-// search for element in list
-bool search(LinkedList list, void *value) {
-	if (is_empty(list)) {
-		fprintf(stderr, "Attempting to search on empty list\n");
-		return false;
-	}
-
-	Node* ptr = list.head;
-
-	while (ptr != NULL) {
-		if (ptr->token.value == value) {
-			return true;
-		} else {
-			if (ptr->next != NULL) {
-				ptr = ptr->next;
-			} else {
-				break;
-			}
-		}
-	}
-
-	return false;
-}
-
-// display token types of list
-void display_token_types(LinkedList list) {
-	Node *ptr = list.head;
-
-	printf("[");
-
-	while (ptr != NULL) {
-		if (ptr->node_type == STRING) {
-			printf("%s", (char *)ptr->token.token_type);
-		} else if (ptr->node_type == INTEGER || ptr->node_type == TOKEN) {
-			printf("%ld", (long)ptr->token.token_type);
-		}
-
-		if (ptr->next != NULL) {
-			ptr = ptr->next;
-
-			printf(", ");
-		} else {
-			break;
-		}
-	}
-
-	printf("]\n");
 }

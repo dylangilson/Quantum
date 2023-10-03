@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
     LinkedList *tokens = create_list();
     tokens = tokenize(tokenizer, tokens);
 
+    free(tokenizer->buffer);
     free(tokenizer);
 
     Parser *parser = create_parser(tokens);
@@ -62,28 +63,26 @@ int main(int argc, char *argv[]) {
 
     char *assembly = (char *)malloc(BUFFER_CAPACITY * sizeof(char));
     memset(assembly, 0, BUFFER_CAPACITY);
-    Generator *generator = create_generator(program);
-    generate_program(generator, assembly);
+    Generator *generator = create_generator(program, assembly);
+    generate_program(generator);
 
     free(program);
-
-    free(generator->buffer);
-    free(generator);
+    free_generator(generator);
 
     FILE *output = fopen("output.asm", "w");
 
     if (output == NULL) {
-        fprintf(stderr, "Unable to create output file\n");
+        fprintf(stderr, "Unable to create output file: output.asm\n");
         return EXIT_FAILURE;
     }
 
-    fputs(assembly, output);
-    fclose(output);
+    fputs(assembly, output); // write assembly code to output file
+    fclose(output); // close output file
 
     free_list(tokens);
     free(assembly);
 
-    system("nasm -felf64 output.asm && ld output.o -o output");
+    system("nasm -felf64 output.asm && ld output.o -o output"); // terminal commands
 
     return EXIT_SUCCESS;
 }

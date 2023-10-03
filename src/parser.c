@@ -103,12 +103,12 @@ Token *peek_parser(Parser parser, int offset) {
         return NULL; // index out of bounds -> no token to return
     }
 
-    return &peek_at(*parser.tokens, parser.index + offset)->token;
+    return peek_at(*parser.tokens, parser.index + offset)->token;
 }
 
 // consume token at current index of parser
 Token *consume_parser(Parser *parser) {
-    return &peek_at(*parser->tokens, parser->index++)->token;
+    return peek_at(*parser->tokens, parser->index++)->token;
 }
 
 // parse expression

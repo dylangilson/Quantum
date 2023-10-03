@@ -8,8 +8,6 @@
 
 #include "linked_list.h"
 
-#define PROGRAM_CAPACITY 512
-
 /*** Expression Nodes ***/ 
 
 typedef struct NodeExpressionIntegerLiteral {
@@ -53,12 +51,12 @@ typedef struct NodeStatement {
 
 typedef struct NodeProgram {
     NodeStatement *statements[PROGRAM_CAPACITY];
-    int program_length;
+    size_t program_length;
 } NodeProgram;
 
 typedef struct Parser {
     LinkedList *tokens;
-    int index;
+    size_t index;
 } Parser;
 
 Parser *create_parser(LinkedList *list);

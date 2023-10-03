@@ -10,10 +10,11 @@
 
 typedef struct Tokenizer {
     const char *src;
-    int index;
+    char *buffer;
+    size_t index;
 } Tokenizer;
 
 Tokenizer *create_tokenizer(const char *src);
-char peek_tokenizer(Tokenizer tokenizer, int offset);
+char peek_tokenizer(Tokenizer tokenizer, size_t offset);
 char consume_tokenizer(Tokenizer *tokenzier);
 LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens);
