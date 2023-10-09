@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <stdlib.h>
+
 #include "linked_list.h"
 
 typedef struct Tokenizer {

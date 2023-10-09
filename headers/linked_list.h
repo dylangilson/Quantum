@@ -19,7 +19,11 @@ typedef enum TokenType {
     CLOSE_PARENTHESIS,
     IDENTIFIER,
     LET,
-    EQUALS
+    EQUALS,
+    PLUS,
+    MINUS,
+    STAR,
+    FORWARD_SLASH
 } TokenType;
 
 typedef struct Token {

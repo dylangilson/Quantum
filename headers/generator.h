@@ -28,6 +28,7 @@ Generator *create_generator(NodeProgram *program, char *buffer);
 Variable *create_variable(char *identifier, size_t stack_location);
 Variable *find_variable(Generator *generator, char *identifier);
 void generate_label(Generator *generator);
+void generate_term(Generator *generator, NodeTerm *term);
 void generate_expression(Generator *generator, NodeExpression *expression);
 void generate_statement(Generator *generator, NodeStatement *statement);
 void generate_program(Generator *generator);

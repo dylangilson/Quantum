@@ -6,7 +6,6 @@
 
 #include <ctype.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "tokenizer.h"
@@ -83,7 +82,19 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             push_tail(tokens, NULL, CLOSE_PARENTHESIS); // append close parenthesis
         } else if (peek_tokenizer(*tokenizer, 0) == '='){
             consume_tokenizer(tokenizer); // consume '='
-            push_tail(tokens, NULL, EQUALS); // append close parenthesis
+            push_tail(tokens, NULL, EQUALS); // append equals
+        } else if (peek_tokenizer(*tokenizer, 0) == '+') {
+            consume_tokenizer(tokenizer); // consume '+'
+            push_tail(tokens, NULL, PLUS); // append plus
+        } else if (peek_tokenizer(*tokenizer, 0) == '-') {
+            consume_tokenizer(tokenizer); // consume '-'
+            push_tail(tokens, NULL, MINUS); // append minus
+        } else if (peek_tokenizer(*tokenizer, 0) == '*') {
+            consume_tokenizer(tokenizer); // consume '*'
+            push_tail(tokens, NULL, STAR); // append star
+        } else if (peek_tokenizer(*tokenizer, 0) == '/') {
+            consume_tokenizer(tokenizer); // consume '/'
+            push_tail(tokens, NULL, FORWARD_SLASH); // append forward slash
         } else if (peek_tokenizer(*tokenizer, 0) == ';') {
             consume_tokenizer(tokenizer); // consume ';'
             push_tail(tokens, NULL, SEMICOLON); // append semicolon

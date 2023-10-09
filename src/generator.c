@@ -56,14 +56,15 @@ void generate_label(Generator *generator) {
     strcat(generator->buffer, ":");
 }
 
-// generate expression
-void generate_expression(Generator *generator, NodeExpression *expression) {
-    if (expression->expression_type == NODE_EXPRESSION_INTEGER_LITERAL) {
+// generate term
+void generate_term(Generator *generator, NodeTerm *term) {
+    if (term->term_type == NODE_TERM_INTEGER_LITERAL) {
         strcat(generator->buffer, "    mov rax, ");
 
         // concatenate integer literal
-        NodeExpressionIntegerLiteral *integer_literal = (NodeExpressionIntegerLiteral *)expression->expression;
-        long value = (long)integer_literal->integer_literal->value;
+        NodeTermIntegerLiteral *integer_literal = (NodeTermIntegerLiteral *)term->value;
+        Token *token = (Token *)integer_literal->integer_literal;
+        long value = (long)token->value;
         char value_as_string[BUFFER_CAPACITY];
         memset(value_as_string, 0, BUFFER_CAPACITY);
         snprintf(value_as_string, sizeof(value_as_string), "%ld", value);
@@ -75,10 +76,9 @@ void generate_expression(Generator *generator, NodeExpression *expression) {
         strcat(generator->buffer, "\n");
         push(generator, "rax"); // push value in rax onto stack
         strcat(generator->buffer, "\n");
-        free(expression);
-    } else if (expression->expression_type == NODE_EXPRESSION_IDENTIFIER) {
-        NodeExpressionIdentifier *expression_identifier = (NodeExpressionIdentifier *)expression->expression;
-        Token *identifier = (Token *)expression_identifier->identifier;
+    } else if (term->term_type == NODE_TERM_IDENTIFIER) {
+        Token *expression_identifier = (Token *)term->value;
+        Token *identifier = (Token *)expression_identifier->value;
 
         Variable *variable = find_variable(generator, (char *)identifier->value);
 
@@ -105,6 +105,47 @@ void generate_expression(Generator *generator, NodeExpression *expression) {
     }
 }
 
+// generate expression
+void generate_expression(Generator *generator, NodeExpression *expression) {
+    if (expression->expression_type == NODE_EXPRESSION_TERM) {
+        NodeTerm *term = (NodeTerm *)expression->expression;
+
+        generate_term(generator, term);
+
+        free(term);
+    } else if (expression->expression_type == NODE_EXPRESSION_BINARY) {
+        NodeBinaryExpression *binary_expression_node = (NodeBinaryExpression *)expression->expression;
+        BinaryExpression *binary_expression = binary_expression_node->expression;
+
+        generate_expression(generator, binary_expression->left_hand_side);
+        generate_expression(generator, binary_expression->right_hand_side);
+
+        pop(generator, "rax");
+        pop(generator, "rbx");
+
+        if (binary_expression_node->type == NODE_BINARY_MULTIPLICATION) {
+            strcat(generator->buffer, "    mul rax, rbx\n");
+            push(generator, "rax");
+        } else if (binary_expression_node->type == NODE_BINARY_DIVISION) {
+            // TODO: division algorithm in x86-64
+            push(generator, "rax");
+        } else if (binary_expression_node->type == NODE_BINARY_ADDITION) {
+            strcat(generator->buffer, "    add rax, rbx\n");
+            push(generator, "rax");
+        } else if (binary_expression_node->type == NODE_BINARY_SUBTRACTION) {
+            strcat(generator->buffer, "    sub rax, rbx\n");
+            push(generator, "rax");
+        }
+
+        strcat(generator->buffer, "\n");
+
+        free(binary_expression);
+        free(binary_expression_node);
+    }
+
+    free(expression);
+}
+
 // generate statement
 void generate_statement(Generator *generator, NodeStatement *statement) {
     if (statement->statement_type == NODE_STATEMENT_EXIT) {
@@ -114,7 +155,6 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         generate_expression(generator, expression); // evaulate expression
 
         free(exit_statement);
-        free(expression);
 
         strcat(generator->buffer, "    mov rax, 60\n"); // 60 -> exit syscall
         pop(generator, "rdi"); // pop expression value into rdi
