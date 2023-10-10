@@ -21,6 +21,8 @@ $$
         \text{integer\_literal}
         \\
         \text{identifier}
+        \\
+        ([\text{Expression}])
     \end{cases}
     \\
     [\text{BinaryExpression}] &\to

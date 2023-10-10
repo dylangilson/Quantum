@@ -62,23 +62,18 @@ void generate_term(Generator *generator, NodeTerm *term) {
         strcat(generator->buffer, "    mov rax, ");
 
         // concatenate integer literal
-        NodeTermIntegerLiteral *integer_literal = (NodeTermIntegerLiteral *)term->value;
-        Token *token = (Token *)integer_literal->integer_literal;
-        long value = (long)token->value;
+        Token *integer_literal = term->value;
+        long value = (long)integer_literal->value;
         char value_as_string[BUFFER_CAPACITY];
         memset(value_as_string, 0, BUFFER_CAPACITY);
         snprintf(value_as_string, sizeof(value_as_string), "%ld", value);
 
         strcat(generator->buffer, value_as_string);
-        
-        free(integer_literal);
-
         strcat(generator->buffer, "\n");
         push(generator, "rax"); // push value in rax onto stack
         strcat(generator->buffer, "\n");
     } else if (term->term_type == NODE_TERM_IDENTIFIER) {
-        Token *expression_identifier = (Token *)term->value;
-        Token *identifier = (Token *)expression_identifier->value;
+        Token *identifier = term->value;
 
         Variable *variable = find_variable(generator, (char *)identifier->value);
 
@@ -100,8 +95,16 @@ void generate_term(Generator *generator, NodeTerm *term) {
         push(generator, reg);
 
         free(reg);
-        free(expression_identifier);
         free(identifier->value);
+    } else if (term->term_type == NODE_TERM_PARENTHESIS) {
+        NodeTermParenthesis *parenthesis_term = (NodeTermParenthesis *)term->value;
+
+        generate_expression(generator, parenthesis_term->expression);
+
+        free(parenthesis_term);
+    } else {
+        fprintf(stderr, "Invalid NodeTermType\n");
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -117,30 +120,30 @@ void generate_expression(Generator *generator, NodeExpression *expression) {
         NodeBinaryExpression *binary_expression_node = (NodeBinaryExpression *)expression->expression;
         BinaryExpression *binary_expression = binary_expression_node->expression;
 
-        generate_expression(generator, binary_expression->left_hand_side);
         generate_expression(generator, binary_expression->right_hand_side);
-
+        generate_expression(generator, binary_expression->left_hand_side);
+        
         pop(generator, "rax");
         pop(generator, "rbx");
 
         if (binary_expression_node->type == NODE_BINARY_MULTIPLICATION) {
-            strcat(generator->buffer, "    mul rax, rbx\n");
-            push(generator, "rax");
+            strcat(generator->buffer, "    mul rbx\n");
         } else if (binary_expression_node->type == NODE_BINARY_DIVISION) {
-            // TODO: division algorithm in x86-64
-            push(generator, "rax");
+            strcat(generator->buffer, "    div rbx\n");
         } else if (binary_expression_node->type == NODE_BINARY_ADDITION) {
             strcat(generator->buffer, "    add rax, rbx\n");
-            push(generator, "rax");
         } else if (binary_expression_node->type == NODE_BINARY_SUBTRACTION) {
             strcat(generator->buffer, "    sub rax, rbx\n");
-            push(generator, "rax");
         }
 
+        push(generator, "rax");
         strcat(generator->buffer, "\n");
 
         free(binary_expression);
         free(binary_expression_node);
+    } else {
+        fprintf(stderr, "Invalid NodeExpressionType\n");
+        exit(EXIT_FAILURE);
     }
 
     free(expression);
@@ -179,7 +182,10 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         free(let_statement);
         free(identifier->value);
-    } 
+    } else {
+        fprintf(stderr, "Invalid NodeStatementType\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 // generate x86-64 assembly from input program

@@ -8,27 +8,22 @@
 
 #include "linked_list.h"
 
-/*** Term Nodes ***/ 
-
-typedef struct NodeTermIntegerLiteral {
-    Token *integer_literal;
-} NodeTermIntegerLiteral;
-
-typedef struct NodeTermIdentifier {
-    Token *identifier;
-} NodeTermIdentifier;
+#define MAX_PRECEDENCE 100
 
 typedef enum NodeTermType {
     NODE_TERM_INTEGER_LITERAL = INTEGER_LITERAL,
     NODE_TERM_IDENTIFIER = IDENTIFIER,
+    NODE_TERM_PARENTHESIS = OPEN_PARENTHESIS
 } NodeTermType;
+
+typedef struct NodeTermParenthesis {
+    struct NodeExpression *expression;
+} NodeTermParenthesis;
 
 typedef struct NodeTerm {
     void *value;
     NodeTermType term_type;
 } NodeTerm;
-
-/*** Expression Nodes ***/
 
 typedef enum NodeExpressionType {
     NODE_EXPRESSION_TERM,
@@ -56,8 +51,6 @@ typedef struct NodeBinaryExpression {
     BinaryExpression *expression;
     NodeBinaryExpressionType type;
 } NodeBinaryExpression;
-
-/*** Statement Nodes ***/
 
 typedef struct NodeStatementExit {
     NodeExpression *expression;
@@ -91,9 +84,10 @@ typedef struct Parser {
 } Parser;
 
 Parser *create_parser(LinkedList *list);
-NodeTermIntegerLiteral *create_node_term_integer_literal(Token *token);
-NodeTermIdentifier *create_node_term_identifier(Token *token);
-NodeTerm *create_node_term(Token *token, NodeTermType type);
+NodeProgram *create_program();
+NodeTermParenthesis *create_node_term_parenthesis(NodeExpression *expression);
+NodeTerm *create_node_term(void *value, NodeTermType type);
+int get_binary_precedence(TokenType type);
 BinaryExpression *create_binary_expression(NodeExpression *left_hand_side, NodeExpression *right_hand_side);
 NodeBinaryExpression *create_node_binary_expression(BinaryExpression *expression, NodeBinaryExpressionType type);
 NodeStatementExit *create_node_statement_exit(NodeExpression *expression);
@@ -102,6 +96,5 @@ NodeStatement *create_node_statement(NodeExpression *expression, Token *identifi
 Token *peek_parser(Parser parser, size_t offset);
 Token *consume_parser(Parser *parser);
 NodeTerm *parse_term(Parser *parser);
-NodeExpression *parse_expression(Parser *parser);
-NodeBinaryExpression *parse_binary_expression(Parser *parser);
+NodeExpression *parse_expression(Parser *parser, int min_precedence);
 NodeProgram *parse_program(Parser *parser);

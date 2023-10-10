@@ -4,10 +4,8 @@
  * September 30, 2023
  */
 
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "parser.h"
 
@@ -28,38 +26,35 @@ NodeProgram *create_program() {
     return program;
 }
 
-// create integer literal expression node
-NodeTermIntegerLiteral *create_node_term_integer_literal(Token *token) {
-    NodeTermIntegerLiteral *term = (NodeTermIntegerLiteral *)malloc(sizeof(NodeTermIntegerLiteral));
-    term->integer_literal = token;
+// create parenthesis term node
+NodeTermParenthesis *create_node_term_parenthesis(NodeExpression *expression) {
+    NodeTermParenthesis *parenthesis_term = (NodeTermParenthesis *)malloc(sizeof(NodeTermParenthesis));
+    parenthesis_term->expression = expression;
 
-    return term;
-}
-
-// create identifier expression node
-NodeTermIdentifier *create_node_term_identifier(Token *token) {
-    NodeTermIdentifier *term = (NodeTermIdentifier *)malloc(sizeof(NodeTermIdentifier));
-    term->identifier = token;
-
-    return term;
+    return parenthesis_term;
 }
 
 // create term node
-NodeTerm *create_node_term(Token *token, NodeTermType type) {
+NodeTerm *create_node_term(void *value, NodeTermType type) {
     NodeTerm *term = (NodeTerm *)malloc(sizeof(NodeTerm));
-
-    if (type == NODE_TERM_INTEGER_LITERAL) {
-        term->value = create_node_term_integer_literal(token);
-    } else if (type == NODE_TERM_IDENTIFIER) {
-        term->value = create_node_term_identifier(token);
-    } else {
-        fprintf(stderr, "Invalid NodeTermType\n");
-        exit(EXIT_FAILURE);
-    }
-
+    term->value = value;
     term->term_type = type;
 
     return term;
+}
+
+// get binary precedence from token type
+int get_binary_precedence(TokenType type) {
+    switch (type) {
+        case STAR:
+        case FORWARD_SLASH:
+            return 1;
+        case PLUS:
+        case MINUS:
+            return 0;
+        default:
+            return MAX_PRECEDENCE;
+    }
 }
 
 // create binary expression
@@ -135,6 +130,26 @@ NodeTerm *parse_term(Parser *parser) {
         return create_node_term(consume_parser(parser), NODE_TERM_INTEGER_LITERAL);
     } else if (peek_parser(*parser, 0)->token_type == IDENTIFIER) {
         return create_node_term(consume_parser(parser), NODE_TERM_IDENTIFIER);
+    } else if (peek_parser(*parser, 0)->token_type == OPEN_PARENTHESIS) {
+        consume_parser(parser); // consume '('
+        NodeExpression *expression = parse_expression(parser, 0);
+
+        if (expression == NULL) {
+            fprintf(stderr, "Expected expression\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_PARENTHESIS) {
+            fprintf(stderr, "Expected ')'\n");
+            exit(EXIT_FAILURE);
+        }
+
+        consume_parser(parser); // consume ')'
+
+        NodeTermParenthesis *term_parenthesis = create_node_term_parenthesis(expression);
+        NodeTerm *term = create_node_term(term_parenthesis, NODE_TERM_PARENTHESIS);
+
+        return term;
     } else {
         fprintf(stderr, "Invalid term\n");
         exit(EXIT_FAILURE);
@@ -142,76 +157,61 @@ NodeTerm *parse_term(Parser *parser) {
 }
 
 // parse expression
-NodeExpression *parse_expression(Parser *parser) {
-    if (peek_parser(*parser, 0) == NULL) {
-        return NULL;
-    }
-
+NodeExpression *parse_expression(Parser *parser, int min_precedence) {
     NodeTerm *term = parse_term(parser);
 
     if (term == NULL) {
         return NULL;
     }
 
-    if (peek_parser(*parser, 0) != NULL && peek_parser(*parser, 0)->token_type == PLUS) {
-        NodeExpression *left_hand_side = (NodeExpression *)malloc(sizeof(NodeExpression));
-        left_hand_side->expression = term;
-        left_hand_side->expression_type = NODE_EXPRESSION_TERM;
+    NodeExpression *left_hand_side = (NodeExpression *)malloc(sizeof(NodeExpression));
+    left_hand_side->expression = term;
+    left_hand_side->expression_type = NODE_EXPRESSION_TERM;
 
-        consume_parser(parser); // consume '+'
+    while (TRUE) {
+        Token *token = peek_parser(*parser, 0);
 
-        NodeExpression *right_hand_side = parse_expression(parser);
+        if (token == NULL) {
+            break;
+        }
+
+        int precedence = get_binary_precedence(token->token_type);
+
+        if (precedence == MAX_PRECEDENCE || precedence < min_precedence) {
+            break;
+        }
+
+        Token *operator = consume_parser(parser);
+        int next_min_precedence = precedence + 1;
+        NodeExpression *right_hand_side = parse_expression(parser, next_min_precedence);
 
         if (right_hand_side == NULL) {
-            fprintf(stderr, "Expected expression\n");
+            fprintf(stderr, "Unable to parse expression\n");
             exit(EXIT_FAILURE);
         }
 
-        BinaryExpression *binary_expression = create_binary_expression(left_hand_side, right_hand_side);
-        NodeBinaryExpression *binary_expression_node = create_node_binary_expression(binary_expression, NODE_BINARY_ADDITION);
+        NodeExpression *left_hand_side2 = (NodeExpression *)malloc(sizeof(NodeExpression));
+        left_hand_side2->expression = left_hand_side->expression;
+        left_hand_side2->expression_type = left_hand_side->expression_type;
 
-        NodeExpression *expression = (NodeExpression *)malloc(sizeof(NodeExpression));
-        expression->expression = binary_expression_node;
-        expression->expression_type = NODE_EXPRESSION_BINARY;
+        BinaryExpression *binary_expression = create_binary_expression(left_hand_side2, right_hand_side);
+        NodeBinaryExpression *binary_expression_node;
 
-        return expression;
-    } else {
-        NodeExpression *expression = (NodeExpression *)malloc(sizeof(NodeExpression));
-        expression->expression = term;
-        expression->expression_type = NODE_EXPRESSION_TERM;
-        
-        return expression;
-    }
-}
-
-// parse binary expresion
-NodeBinaryExpression *parse_binary_expression(Parser *parser) {
-    NodeExpression *left_hand_side = parse_expression(parser);
-
-    if (left_hand_side == NULL) {
-        return NULL;
-    }
-
-    if (peek_parser(*parser, 0) != NULL && peek_parser(*parser, 0)->token_type == PLUS) {
-        consume_parser(parser); // consume '+'
-
-        NodeExpression *right_hand_side = parse_expression(parser);
-
-        if (right_hand_side == NULL) {
-            fprintf(stderr, "Expected expression\n");
-            exit(EXIT_FAILURE);
+        if (operator->token_type == STAR) {
+            binary_expression_node = create_node_binary_expression(binary_expression, NODE_BINARY_MULTIPLICATION);
+        } else if (operator->token_type == FORWARD_SLASH) {
+            binary_expression_node = create_node_binary_expression(binary_expression, NODE_BINARY_DIVISION);
+        } else if (operator->token_type == PLUS) {
+            binary_expression_node = create_node_binary_expression(binary_expression, NODE_BINARY_ADDITION);
+        } else if (operator->token_type == MINUS) {
+            binary_expression_node = create_node_binary_expression(binary_expression, NODE_BINARY_SUBTRACTION);
         }
 
-        BinaryExpression *binary_expression = create_binary_expression(left_hand_side, right_hand_side);
-        NodeBinaryExpression *binary_expression_node = create_node_binary_expression(binary_expression, NODE_BINARY_ADDITION);
-
-        return binary_expression_node;
-    } else {
-        fprintf(stderr, "Unsupported binary operator\n");
-        exit(EXIT_FAILURE);
+        left_hand_side->expression = binary_expression_node;
+        left_hand_side->expression_type = NODE_EXPRESSION_BINARY;
     }
 
-    return NULL;
+    return left_hand_side;
 }
 
 // parse statement
@@ -226,7 +226,7 @@ NodeStatement *parse_statement(Parser *parser) {
         consume_parser(parser); // consume exit
         consume_parser(parser); // consume '('
 
-        NodeExpression *expression = parse_expression(parser);
+        NodeExpression *expression = parse_expression(parser, 0);
 
         if (expression == NULL) {
             fprintf(stderr, "Invalid expression\n");
@@ -265,7 +265,7 @@ NodeStatement *parse_statement(Parser *parser) {
         
         consume_parser(parser); // consume '='
 
-        NodeExpression *expression = parse_expression(parser);
+        NodeExpression *expression = parse_expression(parser, 0);
 
         if (expression == NULL) {
             fprintf(stderr, "Invalid expression\n");
