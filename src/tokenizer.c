@@ -55,6 +55,9 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             } else if (strncmp(tokenizer->buffer, "let", strlen(tokenizer->buffer)) == 0) {
                 push_tail(tokens, NULL, LET); // append let token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
+            } else if (strncmp(tokenizer->buffer, "if", strlen(tokenizer->buffer)) == 0) {
+                push_tail(tokens, NULL, IF); // append if token
+                memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else {
                 char *identifier = (char *)malloc((strlen(tokenizer->buffer) + 1) * sizeof(char));
                 strcpy(identifier, tokenizer->buffer);
@@ -95,6 +98,12 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
         } else if (peek_tokenizer(*tokenizer, 0) == '/') {
             consume_tokenizer(tokenizer); // consume '/'
             push_tail(tokens, NULL, FORWARD_SLASH); // append forward slash
+        } else if (peek_tokenizer(*tokenizer, 0) == '{') {
+            consume_tokenizer(tokenizer); // consume '{'
+            push_tail(tokens, NULL, OPEN_BRACKET); // append open bracket
+        } else if (peek_tokenizer(*tokenizer, 0) == '}') {
+            consume_tokenizer(tokenizer); // consume '}'
+            push_tail(tokens, NULL, CLOSE_BRACKET); // append close bracket
         } else if (peek_tokenizer(*tokenizer, 0) == ';') {
             consume_tokenizer(tokenizer); // consume ';'
             push_tail(tokens, NULL, SEMICOLON); // append semicolon

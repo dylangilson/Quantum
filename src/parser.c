@@ -43,6 +43,14 @@ NodeTerm *create_node_term(void *value, NodeTermType type) {
     return term;
 }
 
+// create scope
+NodeScope *create_scope() {
+    NodeScope *scope = (NodeScope *)malloc(sizeof(NodeScope));
+    scope->scope_size = 0;
+
+    return scope;
+}
+
 // get binary precedence from token type
 int get_binary_precedence(TokenType type) {
     switch (type) {
@@ -77,19 +85,28 @@ NodeBinaryExpression *create_node_binary_expression(BinaryExpression *expression
 
 // create exit statement node
 NodeStatementExit *create_node_statement_exit(NodeExpression *expression) {
-    NodeStatementExit *statement_exit = (NodeStatementExit *)malloc(sizeof(NodeStatementExit));
-    statement_exit->expression = expression;
+    NodeStatementExit *exit_statement = (NodeStatementExit *)malloc(sizeof(NodeStatementExit));
+    exit_statement->expression = expression;
 
-    return statement_exit;
+    return exit_statement;
 }
 
 // create let statement node
 NodeStatementLet *create_node_statement_let(Token *token, NodeExpression *expression) {
-    NodeStatementLet *statement_let = (NodeStatementLet *)malloc(sizeof(NodeStatementLet));
-    statement_let->identifier = token;
-    statement_let->expression = expression;
+    NodeStatementLet *if_statement = (NodeStatementLet *)malloc(sizeof(NodeStatementLet));
+    if_statement->identifier = token;
+    if_statement->expression = expression;
 
-    return statement_let;
+    return if_statement;
+}
+
+// create if statement node
+NodeStatementIf *create_node_statement_if(NodeExpression *expression, NodeScope *scope) {
+    NodeStatementIf *if_statement = (NodeStatementIf *)malloc(sizeof(NodeStatementIf));
+    if_statement->expression = expression;
+    if_statement->scope = scope;
+
+    return if_statement;
 }
 
 // create statement node
@@ -214,6 +231,36 @@ NodeExpression *parse_expression(Parser *parser, int min_precedence) {
     return left_hand_side;
 }
 
+// parse scope
+NodeScope *parse_scope(Parser *parser) {
+    if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != OPEN_BRACKET) {
+        return NULL;
+    }
+
+    consume_parser(parser); // consume '{'
+
+    NodeScope *scope = create_scope();
+
+    while (TRUE) {
+        NodeStatement *statement = parse_statement(parser);
+
+        if (statement == NULL) {
+            break;
+        }
+
+        scope->statements[scope->scope_size++] = statement;
+    }
+
+    if (peek_parser(*parser, 0) == NULL && peek_parser(*parser, 0)->token_type != CLOSE_BRACKET) {
+        fprintf(stderr, "Expected '}'\n");
+        exit(EXIT_FAILURE);
+    }
+
+    consume_parser(parser); // consume '}'
+
+    return scope;
+}
+
 // parse statement
 NodeStatement *parse_statement(Parser *parser) {
     if (peek_parser(*parser, 0) == NULL) {
@@ -222,7 +269,7 @@ NodeStatement *parse_statement(Parser *parser) {
 
     NodeStatement *statement;
 
-    if (peek_parser(*parser, 1) != NULL && peek_parser(*parser, 1)->token_type == OPEN_PARENTHESIS) {
+    if (peek_parser(*parser, 0)->token_type == EXIT && peek_parser(*parser, 1) != NULL && peek_parser(*parser, 1)->token_type == OPEN_PARENTHESIS) {
         consume_parser(parser); // consume exit
         consume_parser(parser); // consume '('
 
@@ -233,7 +280,8 @@ NodeStatement *parse_statement(Parser *parser) {
             exit(EXIT_FAILURE);
         }
 
-        statement = create_node_statement(expression, NULL, NODE_STATEMENT_EXIT);
+        NodeStatementExit *exit_statement = (NodeStatementExit *)malloc(sizeof(NodeStatementExit));
+        exit_statement->expression = expression;
 
         if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_PARENTHESIS) {
             fprintf(stderr, "Expected ')'\n");
@@ -248,7 +296,11 @@ NodeStatement *parse_statement(Parser *parser) {
         }
 
         consume_parser(parser); // consume ';'
-    } else if (peek_parser(*parser, 0) != NULL && peek_parser(*parser, 0)->token_type == LET) {
+
+        statement = (NodeStatement *)malloc(sizeof(NodeStatement));
+        statement->statement = exit_statement;
+        statement->statement_type = NODE_STATEMENT_EXIT;
+    } else if (peek_parser(*parser, 0)->token_type == LET) {
         consume_parser(parser); // consume let
 
         if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != IDENTIFIER) {
@@ -280,9 +332,55 @@ NodeStatement *parse_statement(Parser *parser) {
         consume_parser(parser); // consume ';'
 
         statement = create_node_statement(expression, identifier, NODE_STATEMENT_LET);
+    } else if (peek_parser(*parser, 0)->token_type == OPEN_BRACKET) {
+        NodeScope *scope = parse_scope(parser);
+
+        if (scope == NULL) {
+            fprintf(stderr, "Invalid scope\n");
+            exit(EXIT_FAILURE);
+        }
+
+        statement = (NodeStatement *)malloc(sizeof(NodeStatement));
+        statement->statement = scope;
+        statement->statement_type = NODE_STATEMENT_SCOPE;
+    } else if (peek_parser(*parser, 0)->token_type == IF) {
+        consume_parser(parser); // consume if
+
+        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != OPEN_PARENTHESIS) {
+            fprintf(stderr, "Expected '('\n");
+            exit(EXIT_FAILURE);
+        }
+
+        consume_parser(parser); // consume '('
+   
+        NodeExpression *expression = parse_expression(parser, 0);
+
+        if (expression == NULL) {
+            fprintf(stderr, "Invalid expression\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_PARENTHESIS) {
+            fprintf(stderr, "Expected ')'\n");
+            exit(EXIT_FAILURE);
+        }
+
+        consume_parser(parser); // consume ')'
+
+        NodeScope *scope = parse_scope(parser);
+
+        if (scope == NULL) {
+            fprintf(stderr, "Invalid scope\n");
+            exit(EXIT_FAILURE);
+        }
+
+        NodeStatementIf *if_statement = create_node_statement_if(expression, scope);
+
+        statement = (NodeStatement *)malloc(sizeof(NodeStatement));
+        statement->statement = if_statement;
+        statement->statement_type = NODE_STATEMENT_IF;
     } else {
-        fprintf(stderr, "Invalid statement\n");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
 
     return statement;

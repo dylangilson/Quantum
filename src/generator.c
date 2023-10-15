@@ -33,6 +33,22 @@ Variable *create_variable(char *identifier, size_t stack_location) {
     return variable;
 }
 
+// create label
+char *create_label(Generator *generator) {
+    char *label = (char *)malloc(BUFFER_CAPACITY);
+    memset(label, 0, BUFFER_CAPACITY);
+    strcat(label, "label");
+
+    char index[BUFFER_CAPACITY];
+    memset(index, 0, BUFFER_CAPACITY);
+
+    snprintf(index, sizeof(index), "%ld", generator->label_count++);
+
+    strcat(label, index);
+
+    return label;
+}
+
 // find variable in array
 Variable *find_variable(Generator *generator, char *identifier) {
     for (size_t i = 0; i < generator->variable_count; i++) {
@@ -149,6 +165,26 @@ void generate_expression(Generator *generator, NodeExpression *expression) {
     free(expression);
 }
 
+// generate scope
+void generate_scope(Generator *generator, NodeScope *scope) {
+    begin_scope(generator);
+    size_t index = 0;
+
+    while (TRUE) {
+        if (index >= scope->scope_size) {
+            break;
+        }
+
+        NodeStatement *statement = scope->statements[index++];
+
+        generate_statement(generator, statement);
+
+        free(statement);
+    }
+
+    end_scope(generator);
+}
+
 // generate statement
 void generate_statement(Generator *generator, NodeStatement *statement) {
     if (statement->statement_type == NODE_STATEMENT_EXIT) {
@@ -182,6 +218,36 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         free(let_statement);
         free(identifier->value);
+    } else if (statement->statement_type == NODE_STATEMENT_SCOPE) {
+        NodeScope *scope = (NodeScope *)statement->statement;
+
+        generate_scope(generator, scope);
+
+        free(scope);
+    } else if (statement->statement_type == NODE_STATEMENT_IF) {
+        NodeStatementIf *if_statement = (NodeStatementIf *)statement->statement;
+
+        generate_expression(generator, if_statement->expression);
+
+        pop(generator, "rax");
+
+        char *label = create_label(generator);
+
+        strcat(generator->buffer, "    test rax, rax\n");
+        strcat(generator->buffer, "    jz ");
+        strcat(generator->buffer, label);
+        strcat(generator->buffer, "\n");
+
+        generate_scope(generator, if_statement->scope);
+
+        free(if_statement->scope);
+        free(if_statement);
+
+        strcat(generator->buffer, "\n");
+        strcat(generator->buffer, label);
+        strcat(generator->buffer, ":\n");
+
+        free(label);
     } else {
         fprintf(stderr, "Invalid NodeStatementType\n");
         exit(EXIT_FAILURE);
@@ -229,7 +295,7 @@ void begin_scope(Generator *generator) {
 
 // end scope
 void end_scope(Generator *generator) {
-    size_t pop_count = generator->variable_count - generator->scope_count;
+    size_t pop_count = generator->variable_count - generator->scopes[--generator->scope_count];
 
     char count[BUFFER_CAPACITY];
     memset(count, 0, BUFFER_CAPACITY);
@@ -239,11 +305,12 @@ void end_scope(Generator *generator) {
     strcat(generator->buffer, count);
     strcat(generator->buffer, "\n");
 
-    for (size_t i = 0; i < pop_count; i++) {
-        free(generator->variables[generator->variable_count--]->identifier);
-    }
+    generator->stack_size -= pop_count;
 
-    generator->scope_count--;
+    for (size_t i = 0; i < pop_count; i++) {
+        free(generator->variables[--generator->variable_count]->identifier);
+        free(generator->variables[generator->variable_count]);
+    }
 }
 
 void free_generator(Generator *generator) {

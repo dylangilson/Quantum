@@ -8,7 +8,7 @@
 
 #include "bool.h"
 
-#define BUFFER_CAPACITY 1024
+#define BUFFER_CAPACITY 2048
 #define PROGRAM_CAPACITY 512
 
 typedef enum TokenType {
@@ -17,6 +17,9 @@ typedef enum TokenType {
     SEMICOLON,
     OPEN_PARENTHESIS,
     CLOSE_PARENTHESIS,
+    OPEN_BRACKET,
+    CLOSE_BRACKET,
+    IF,
     IDENTIFIER,
     LET,
     EQUALS,
