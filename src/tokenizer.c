@@ -77,6 +77,35 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             long temp = atoi(tokenizer->buffer); // convert string to number
             push_tail(tokens, (int *)temp, INTEGER_LITERAL); // append number to buffer
             memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
+        } else if (peek_tokenizer(*tokenizer, 0) == '/' && peek_tokenizer(*tokenizer, 1) != '\0' && peek_tokenizer(*tokenizer, 1) == '/') {
+            consume_tokenizer(tokenizer); // consume '/'
+            consume_tokenizer(tokenizer); // consume '/'
+
+            while (peek_tokenizer(*tokenizer, 0) != '\0' && peek_tokenizer(*tokenizer, 0) != '\n') {
+                consume_tokenizer(tokenizer); // consume comment
+            }
+
+            consume_tokenizer(tokenizer); // consume '\n'
+        } else if (peek_tokenizer(*tokenizer, 0) == '/' && peek_tokenizer(*tokenizer, 1) != '\0' && peek_tokenizer(*tokenizer, 1) == '*') {
+            consume_tokenizer(tokenizer); // consume '/'
+            consume_tokenizer(tokenizer); // consume '*'
+
+            while (peek_tokenizer(*tokenizer, 0) != '\0') {
+                if (peek_tokenizer(*tokenizer, 0) == '*' && peek_tokenizer(*tokenizer, 1) != '\0' && peek_tokenizer(*tokenizer, 1) == '/') {
+                    break;               
+                }
+
+                consume_tokenizer(tokenizer); // consume comment
+            }
+
+            // check for end of multi-line comment
+            if (peek_tokenizer(*tokenizer, 0) == feof(stdin)) {
+                fprintf(stderr, "Expected '*/'\n");
+                exit(EXIT_FAILURE);
+            }
+
+            consume_tokenizer(tokenizer); // consume '*'
+            consume_tokenizer(tokenizer); // consume '/'
         } else if (peek_tokenizer(*tokenizer, 0) == '(') {
             consume_tokenizer(tokenizer); // consume '('
             push_tail(tokens, NULL, OPEN_PARENTHESIS); // append open parenthesis

@@ -251,7 +251,7 @@ NodeScope *parse_scope(Parser *parser) {
         scope->statements[scope->scope_size++] = statement;
     }
 
-    if (peek_parser(*parser, 0) == NULL && peek_parser(*parser, 0)->token_type != CLOSE_BRACKET) {
+    if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_BRACKET) {
         fprintf(stderr, "Expected '}'\n");
         exit(EXIT_FAILURE);
     }

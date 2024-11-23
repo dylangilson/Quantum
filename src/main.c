@@ -7,7 +7,7 @@
 /*** Compilation & Running ***/
 // make
 // ./quantum <input.qtm>
-// ./output
+// ./output; echo $?
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +20,7 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        fprintf(stderr, "Incorrect usage. Correct usage is: 'quantum <input.qtm>'\n");
+        fprintf(stderr, "Incorrect usage. Correct usage is: './quantum <input.qtm>'\n");
         return EXIT_FAILURE;
     }
 
