@@ -32,6 +32,7 @@ void generate_label(Generator *generator);
 void generate_term(Generator *generator, NodeTerm *term);
 void generate_expression(Generator *generator, NodeExpression *expression);
 void generate_scope(Generator *generator, NodeScope *scope);
+void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, char *end_label);
 void generate_statement(Generator *generator, NodeStatement *statement);
 void generate_program(Generator *generator);
 void push(Generator *generator, char *reg);

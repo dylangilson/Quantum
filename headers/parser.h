@@ -78,9 +78,30 @@ typedef struct NodeScope {
     size_t scope_size;
 } NodeScope;
 
+typedef enum NodeIfPredicateType {
+    NODE_IF_PREDICATE_ELIF = ELIF,
+    NODE_IF_PREDICATE_ELSE = ELSE
+} NodeIfPredicateType;
+
+typedef struct NodeIfPredicate {
+    void *if_predicate;
+    NodeIfPredicateType predicate_type;
+} NodeIfPredicate;
+
+typedef struct NodeIfPredicateElif {
+    NodeExpression *expression;
+    NodeScope *scope;
+    NodeIfPredicate *if_predicate;
+} NodeIfPredicateElif;
+
+typedef struct NodeIfPredicateElse {
+    NodeScope *scope;
+} NodeIfPredicateElse;
+
 typedef struct NodeStatementIf {
     NodeExpression *expression;
     NodeScope *scope;
+    NodeIfPredicate *if_predicate;
 } NodeStatementIf;
 
 /*** Program Node ***/
@@ -112,5 +133,6 @@ Token *consume_parser(Parser *parser);
 NodeTerm *parse_term(Parser *parser);
 NodeExpression *parse_expression(Parser *parser, int min_precedence);
 NodeScope *parse_scope(Parser *parser);
+NodeIfPredicate *parse_if_predicate(Parser *parser);
 NodeStatement *parse_statement(Parser *parser);
 NodeProgram *parse_program(Parser *parser);

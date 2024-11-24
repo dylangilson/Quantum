@@ -261,6 +261,77 @@ NodeScope *parse_scope(Parser *parser) {
     return scope;
 }
 
+// parse if predicate
+NodeIfPredicate *parse_if_predicate(Parser *parser) {
+    if (peek_parser(*parser, 0) == NULL) {
+        return NULL;
+    }
+
+    NodeIfPredicate *if_predicate;
+
+    if (peek_parser(*parser, 0)->token_type == ELIF) {
+        consume_parser(parser); // consume elif
+
+        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != OPEN_PARENTHESIS) {
+            fprintf(stderr, "Expected '('\n");
+            exit(EXIT_FAILURE);
+        }
+
+        consume_parser(parser); // consume '('
+
+        NodeIfPredicateElif *predicate = (NodeIfPredicateElif *)malloc(sizeof(NodeIfPredicateElif));
+        NodeExpression *expression = parse_expression(parser, 0);
+
+        if (expression == NULL) {
+            fprintf(stderr, "Expected expression\n");
+            exit(EXIT_FAILURE);
+        }
+
+        predicate->expression = expression;
+
+        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_PARENTHESIS) {
+            fprintf(stderr, "Expected ')'\n");
+            exit(EXIT_FAILURE);
+        }
+
+        consume_parser(parser); // consume ')'
+
+        NodeScope *scope = parse_scope(parser);
+
+        if (scope == NULL) {
+            fprintf(stderr, "Expected scope\n");
+            exit(EXIT_FAILURE);
+        }
+
+        predicate->scope = scope;
+        predicate->if_predicate = parse_if_predicate(parser);
+
+        if_predicate = (NodeIfPredicate *)malloc(sizeof(NodeIfPredicate));
+        if_predicate->if_predicate = predicate;
+        if_predicate->predicate_type = NODE_IF_PREDICATE_ELIF;
+    } else if (peek_parser(*parser, 0)->token_type == ELSE) {
+        consume_parser(parser); // consume else
+
+        NodeIfPredicateElse *predicate = (NodeIfPredicateElse *)malloc(sizeof(NodeIfPredicateElse));
+        NodeScope *scope = parse_scope(parser);
+
+        if (scope == NULL) {
+            fprintf(stderr, "Expected scope\n");
+            exit(EXIT_FAILURE);
+        }
+
+        predicate->scope = scope;
+
+        if_predicate = (NodeIfPredicate *)malloc(sizeof(NodeIfPredicate));
+        if_predicate->if_predicate = predicate;
+        if_predicate->predicate_type = NODE_IF_PREDICATE_ELSE;
+    } else {
+        return NULL;
+    }
+
+    return if_predicate;
+}
+
 // parse statement
 NodeStatement *parse_statement(Parser *parser) {
     if (peek_parser(*parser, 0) == NULL) {
@@ -375,6 +446,7 @@ NodeStatement *parse_statement(Parser *parser) {
         }
 
         NodeStatementIf *if_statement = create_node_statement_if(expression, scope);
+        if_statement->if_predicate = parse_if_predicate(parser);
 
         statement = (NodeStatement *)malloc(sizeof(NodeStatement));
         statement->statement = if_statement;

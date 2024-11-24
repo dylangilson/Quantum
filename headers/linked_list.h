@@ -20,6 +20,8 @@ typedef enum TokenType {
     OPEN_BRACKET,
     CLOSE_BRACKET,
     IF,
+    ELIF,
+    ELSE,
     IDENTIFIER,
     LET,
     EQUALS,

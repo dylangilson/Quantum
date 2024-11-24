@@ -185,6 +185,57 @@ void generate_scope(Generator *generator, NodeScope *scope) {
     end_scope(generator);
 }
 
+// generate if predicate
+void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, char *end_label) {
+    if (if_predicate->predicate_type == NODE_IF_PREDICATE_ELIF) {
+        NodeIfPredicateElif *predicate = (NodeIfPredicateElif *)if_predicate->if_predicate;
+
+        generate_expression(generator, predicate->expression);
+
+        pop(generator, "rax");
+
+        char *label = create_label(generator);
+
+        strcat(generator->buffer, "    test rax, rax\n");
+        strcat(generator->buffer, "    jz ");
+        strcat(generator->buffer, label);
+        strcat(generator->buffer, "\n");
+
+        generate_scope(generator, predicate->scope);
+
+        free(predicate->scope);
+
+        strcat(generator->buffer, "\n");
+        strcat(generator->buffer, "    jmp ");
+        strcat(generator->buffer, end_label);
+        strcat(generator->buffer, "\n");
+
+        if (predicate->if_predicate != NULL) {
+            strcat(generator->buffer, "\n");
+            strcat(generator->buffer, label);
+            strcat(generator->buffer, ":\n");
+
+            free(label);
+
+            generate_if_predicate(generator, predicate->if_predicate, end_label);
+
+            free(predicate->if_predicate);
+        }
+
+        free(predicate);
+    } else if (if_predicate->predicate_type == NODE_IF_PREDICATE_ELSE) {
+        NodeIfPredicateElse *predciate = (NodeIfPredicateElse *)if_predicate->if_predicate;
+
+        generate_scope(generator, predciate->scope);
+
+        free(predciate->scope);
+        free(predciate);
+    } else {
+        fprintf(stderr, "Invalid NodeIfPredicateType\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 // generate statement
 void generate_statement(Generator *generator, NodeStatement *statement) {
     if (statement->statement_type == NODE_STATEMENT_EXIT) {
@@ -241,13 +292,25 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         generate_scope(generator, if_statement->scope);
 
         free(if_statement->scope);
-        free(if_statement);
 
         strcat(generator->buffer, "\n");
         strcat(generator->buffer, label);
         strcat(generator->buffer, ":\n");
 
+        if (if_statement->if_predicate != NULL) {
+            char *end_label = create_label(generator);
+
+            generate_if_predicate(generator, if_statement->if_predicate, end_label);
+
+            strcat(generator->buffer, end_label);
+            strcat(generator->buffer, ":\n");
+
+            free(end_label);
+            free(if_statement->if_predicate);
+        }
+
         free(label);
+        free(if_statement);
     } else {
         fprintf(stderr, "Invalid NodeStatementType\n");
         exit(EXIT_FAILURE);

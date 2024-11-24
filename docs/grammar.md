@@ -8,12 +8,21 @@ $$
         \\
         \text{let}\space\text{identifier} = [\text{Expression}];
         \\
-        \text{if} ([\text{Expression}])[\text{Scope}]
+        \text{if} ([\text{Expression}])[\text{Scope}]\text{[IfPredicate]}
         \\
         [\text{Scope}]
     \end{cases}
     \\
     \text{[Scope]} &\to \{{[\text{Statement}]^*}\}
+    \\
+    \text{[IfPredicate]} &\to
+    \begin{cases}
+        \text{elif\text{[Expression]})\text{[Scope]}\text{[IfPredicate]}}
+        \\
+        \text{else}\text{[Scope]}
+        \\
+        \epsilon
+    \end{cases}
     \\
     [\text{Expression}] &\to
     \begin{cases}

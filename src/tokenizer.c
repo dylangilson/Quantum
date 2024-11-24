@@ -58,6 +58,12 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             } else if (strncmp(tokenizer->buffer, "if", strlen(tokenizer->buffer)) == 0) {
                 push_tail(tokens, NULL, IF); // append if token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
+            } else if (strncmp(tokenizer->buffer, "elif", strlen(tokenizer->buffer)) == 0) {
+                push_tail(tokens, NULL, ELIF); // append elif token
+                memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
+            } else if (strncmp(tokenizer->buffer, "else", strlen(tokenizer->buffer)) == 0) {
+                push_tail(tokens, NULL, ELSE); // append else token
+                memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else {
                 char *identifier = (char *)malloc((strlen(tokenizer->buffer) + 1) * sizeof(char));
                 strcpy(identifier, tokenizer->buffer);
@@ -84,8 +90,6 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             while (peek_tokenizer(*tokenizer, 0) != '\0' && peek_tokenizer(*tokenizer, 0) != '\n') {
                 consume_tokenizer(tokenizer); // consume comment
             }
-
-            consume_tokenizer(tokenizer); // consume '\n'
         } else if (peek_tokenizer(*tokenizer, 0) == '/' && peek_tokenizer(*tokenizer, 1) != '\0' && peek_tokenizer(*tokenizer, 1) == '*') {
             consume_tokenizer(tokenizer); // consume '/'
             consume_tokenizer(tokenizer); // consume '*'
