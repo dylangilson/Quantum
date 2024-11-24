@@ -8,7 +8,7 @@
 
 #include "bool.h"
 
-#define BUFFER_CAPACITY 2048
+#define BUFFER_CAPACITY 4096
 #define PROGRAM_CAPACITY 512
 
 typedef enum TokenType {

@@ -65,7 +65,8 @@ typedef enum NodeStatementType {
     NODE_STATEMENT_EXIT = EXIT,
     NODE_STATEMENT_LET = LET,
     NODE_STATEMENT_SCOPE = OPEN_BRACKET,
-    NODE_STATEMENT_IF = IF
+    NODE_STATEMENT_IF = IF,
+    NODE_STATEMENT_ASSIGNMENT
 } NodeStatementType;
 
 typedef struct NodeStatement {
@@ -103,6 +104,11 @@ typedef struct NodeStatementIf {
     NodeScope *scope;
     NodeIfPredicate *if_predicate;
 } NodeStatementIf;
+
+typedef struct NodeStatementAssignment {
+    Token *identifier;
+    NodeExpression *expression;
+} NodeStatementAssignment;
 
 /*** Program Node ***/
 

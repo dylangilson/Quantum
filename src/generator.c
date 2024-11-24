@@ -267,8 +267,34 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         generate_expression(generator, let_statement->expression); // evaulate expression
 
-        free(let_statement);
         free(identifier->value);
+        free(let_statement);
+    } else if (statement->statement_type == NODE_STATEMENT_ASSIGNMENT) {
+        NodeStatementAssignment *assignment_statement = (NodeStatementAssignment *)statement->statement;
+        Token *identifier = (Token *)assignment_statement->identifier;
+        
+        Variable *temp = find_variable(generator, (char *)identifier->value);
+
+        // undeclared identifier
+        if (temp == NULL) {
+            fprintf(stderr, "Undeclared identifier: %s\n", (char *)identifier->value);
+            exit(EXIT_FAILURE);
+        }
+
+        generate_expression(generator, assignment_statement->expression); // evaluate expression
+
+        pop(generator, "rax");
+
+        char count[BUFFER_CAPACITY];
+        memset(count, 0, BUFFER_CAPACITY);
+        snprintf(count, sizeof(count), "%zu", (generator->stack_size - temp->stack_location - 1) * 8); // 8 bytes -> 64 bits
+
+        strcat(generator->buffer, "    mov [rsp + ");
+        strcat(generator->buffer, count);
+        strcat(generator->buffer, "], rax\n");
+
+        free(identifier->value);
+        free(assignment_statement);
     } else if (statement->statement_type == NODE_STATEMENT_SCOPE) {
         NodeScope *scope = (NodeScope *)statement->statement;
 
@@ -293,12 +319,15 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         free(if_statement->scope);
 
-        strcat(generator->buffer, "\n");
-        strcat(generator->buffer, label);
-        strcat(generator->buffer, ":\n");
-
         if (if_statement->if_predicate != NULL) {
             char *end_label = create_label(generator);
+
+            strcat(generator->buffer, "    jmp ");
+            strcat(generator->buffer, end_label);
+            strcat(generator->buffer, "\n");
+
+            strcat(generator->buffer, label);
+            strcat(generator->buffer, ":\n");
 
             generate_if_predicate(generator, if_statement->if_predicate, end_label);
 
@@ -307,6 +336,9 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
             free(end_label);
             free(if_statement->if_predicate);
+        } else {
+            strcat(generator->buffer, label);
+            strcat(generator->buffer, ":\n");
         }
 
         free(label);

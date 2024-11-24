@@ -8,6 +8,8 @@ $$
         \\
         \text{let}\space\text{identifier} = [\text{Expression}];
         \\
+        \text{identifier} = \text{[Expression]};
+        \\
         \text{if} ([\text{Expression}])[\text{Scope}]\text{[IfPredicate]}
         \\
         [\text{Scope}]
@@ -17,7 +19,7 @@ $$
     \\
     \text{[IfPredicate]} &\to
     \begin{cases}
-        \text{elif\text{[Expression]})\text{[Scope]}\text{[IfPredicate]}}
+        \text{elif\text({[Expression]})\text{[Scope]}\text{[IfPredicate]}}
         \\
         \text{else}\text{[Scope]}
         \\
@@ -31,15 +33,6 @@ $$
         [\text{BinaryExpression}]
     \end{cases}
     \\
-    [\text{Term}] &\to
-    \begin{cases}
-        \text{integer\_literal}
-        \\
-        \text{identifier}
-        \\
-        ([\text{Expression}])
-    \end{cases}
-    \\
     [\text{BinaryExpression}] &\to
     \begin{cases}
         [\text{Expression}] * \ [\text{Expression}] & \text{precedence} = 1
@@ -50,5 +43,15 @@ $$
         \\
         [\text{Expression}] - [\text{Expression}] & \text{precedence} = 0
     \end{cases}
+    \\
+    [\text{Term}] &\to
+    \begin{cases}
+        \text{integer\_literal}
+        \\
+        \text{identifier}
+        \\
+        ([\text{Expression}])
+    \end{cases}
+    
 \end{align}
 $$

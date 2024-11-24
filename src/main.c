@@ -9,6 +9,10 @@
 // ./quantum <input.qtm>
 // ./output; echo $?
 
+/*** TODOs ***/
+// refactor (add consume() and try_consume()), use const, add comments to ASM
+// add const
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

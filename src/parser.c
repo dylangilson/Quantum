@@ -403,6 +403,39 @@ NodeStatement *parse_statement(Parser *parser) {
         consume_parser(parser); // consume ';'
 
         statement = create_node_statement(expression, identifier, NODE_STATEMENT_LET);
+    } else if (peek_parser(*parser, 0)->token_type == IDENTIFIER) {
+        Token *identifier = consume_parser(parser); // consume identifier
+
+        NodeStatementAssignment *assignment = (NodeStatementAssignment *)malloc(sizeof(NodeStatementAssignment));
+
+        assignment->identifier = identifier;
+
+        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != EQUALS) {
+            fprintf(stderr, "Expected '='\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        consume_parser(parser); // consume '='
+
+        NodeExpression *expression = parse_expression(parser, 0);
+
+        if (expression == NULL) {
+            fprintf(stderr, "Invalid expression\n");
+            exit(EXIT_FAILURE);
+        }
+
+        assignment->expression = expression;
+
+        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != SEMICOLON) {
+            fprintf(stderr, "Expected ';'\n");
+            exit(EXIT_FAILURE);
+        }
+
+        consume_parser(parser); // consume ';'
+
+        statement = (NodeStatement *)malloc(sizeof(NodeStatement));
+        statement->statement = assignment;
+        statement->statement_type = NODE_STATEMENT_ASSIGNMENT;
     } else if (peek_parser(*parser, 0)->token_type == OPEN_BRACKET) {
         NodeScope *scope = parse_scope(parser);
 
