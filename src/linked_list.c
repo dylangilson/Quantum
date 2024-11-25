@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <linked_list.h>
+#include "linked_list.h"
 
 /*** NOTES ***/
 // pushing a value to the list that is not a pointer requires a cast to a pointer with this syntax : push_head(list, (int *)<VALUE>, INTEGER_LITERAL, line_number);
