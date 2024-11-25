@@ -57,6 +57,9 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             } else if (strncmp(tokenizer->buffer, "let", strlen(tokenizer->buffer)) == 0) {
                 push_tail(tokens, NULL, LET, line_number); // append let token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
+            } else if (strncmp(tokenizer->buffer, "const", strlen(tokenizer->buffer)) == 0) {
+                push_tail(tokens, NULL, CONST, line_number); // append let token
+                memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else if (strncmp(tokenizer->buffer, "if", strlen(tokenizer->buffer)) == 0) {
                 push_tail(tokens, NULL, IF, line_number); // append if token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer

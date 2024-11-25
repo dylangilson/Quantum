@@ -91,16 +91,15 @@ NodeStatementExit *create_node_statement_exit(NodeExpression *expression) {
     return exit_statement;
 }
 
-// create let statement node
-NodeStatementLet *create_node_statement_let(Token *token, NodeExpression *expression) {
-    NodeStatementLet *if_statement = (NodeStatementLet *)malloc(sizeof(NodeStatementLet));
-    if_statement->identifier = token;
-    if_statement->expression = expression;
+// create field statement node
+NodeStatementField *create_node_statement_field(Token *token, NodeExpression *expression, NodeStatementFieldType field_type) {
+    NodeStatementField *field_statement = (NodeStatementField *)malloc(sizeof(NodeStatementField));
+    field_statement->identifier = token;
+    field_statement->expression = expression;
+    field_statement->field_type = field_type;
 
-    return if_statement;
+    return field_statement;
 }
-
-
 
 // create if statement node
 NodeStatementIf *create_node_statement_if(NodeExpression *expression, NodeScope *scope) {
@@ -127,7 +126,9 @@ NodeStatement *create_node_statement(Parser *parser, NodeExpression *expression,
     if (statement_type == NODE_STATEMENT_EXIT) {
         statement->statement = create_node_statement_exit(expression);
     } else if (statement_type == NODE_STATEMENT_LET) {
-        statement->statement = create_node_statement_let(identifier, expression);
+        statement->statement = create_node_statement_field(identifier, expression, NODE_STATEMENT_FIELD_LET);
+    } else if (statement_type == NODE_STATEMENT_CONST) {
+        statement->statement = create_node_statement_field(identifier, expression, NODE_STATEMENT_FIELD_CONST);
     } else if (statement_type == NODE_STATEMENT_ASSIGNMENT) {
         statement->statement = create_node_statement_assignment(identifier, expression);
     } else if (statement_type == NODE_STATEMENT_IF) {
@@ -352,6 +353,22 @@ NodeStatement *parse_statement(Parser *parser) {
         try_consume_parser(parser, SEMICOLON); // consume ';'
 
         statement = create_node_statement(parser, expression, identifier, NULL, NODE_STATEMENT_LET);
+    } else if (peek_parser(*parser, 0)->token_type == CONST) {
+        consume_parser(parser); // consume const
+
+        Token *identifier = try_consume_parser(parser, IDENTIFIER); // consume identifier
+        
+        try_consume_parser(parser, EQUALS); // consume '='
+
+        NodeExpression *expression = parse_expression(parser, 0);
+
+        if (expression == NULL) {
+            parser_error(*parser, "expression");
+        }
+
+        try_consume_parser(parser, SEMICOLON); // consume ';'
+
+        statement = create_node_statement(parser, expression, identifier, NULL, NODE_STATEMENT_CONST);
     } else if (peek_parser(*parser, 0)->token_type == IDENTIFIER) {
         Token *identifier = consume_parser(parser); // consume identifier
 

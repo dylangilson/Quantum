@@ -24,10 +24,11 @@ Generator *create_generator(NodeProgram *program, char *buffer) {
 }
 
 // create variable
-Variable *create_variable(char *identifier, size_t stack_location) {
+Variable *create_variable(char *identifier, NodeStatementFieldType field_type, size_t stack_location) {
     Variable *variable = (Variable *)malloc(sizeof(Variable));
     variable->identifier = (char *)malloc(BUFFER_CAPACITY * sizeof(char));
     strcpy(variable->identifier, identifier);
+    variable->field_type = field_type;
     variable->stack_location = stack_location;
 
     return variable;
@@ -256,8 +257,8 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         pop(generator, "rdi"); // pop expression value into rdi
         strcat(generator->buffer, "    syscall\n\n");
     } else if (statement->statement_type == NODE_STATEMENT_LET) {
-        NodeStatementLet *let_statement = (NodeStatementLet *)statement->statement;
-        Token *identifier = (Token *)let_statement->identifier;
+        NodeStatementField *field_statement = (NodeStatementField *)statement->statement;
+        Token *identifier = (Token *)field_statement->identifier;
         
         Variable *temp = find_variable(generator, (char *)identifier->value);
 
@@ -267,18 +268,42 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
             exit(EXIT_FAILURE);
         }
 
-        strcat(generator->buffer, "    ; let ");
+        strcat(generator->buffer, "    ; let declaration of variable: ");
         strcat(generator->buffer, (char *)identifier->value);
         strcat(generator->buffer, "\n");
 
-        Variable *variable = create_variable((char *)identifier->value, generator->stack_size);
+        Variable *variable = create_variable((char *)identifier->value, NODE_STATEMENT_FIELD_LET, generator->stack_size);
 
         generator->variables[generator->variable_count++] = variable;
 
-        generate_expression(generator, let_statement->expression); // evaulate expression
+        generate_expression(generator, field_statement->expression); // evaulate expression
 
         free(identifier->value);
-        free(let_statement);
+        free(field_statement);
+    } else if (statement->statement_type == NODE_STATEMENT_CONST) {
+        NodeStatementField *field_statement = (NodeStatementField *)statement->statement;
+        Token *identifier = (Token *)field_statement->identifier;
+        
+        Variable *temp = find_variable(generator, (char *)identifier->value);
+
+        // identifier already declared
+        if (temp != NULL) {
+            fprintf(stderr, "Identifier: %s already declared\n", (char *)identifier->value);
+            exit(EXIT_FAILURE);
+        }
+
+        strcat(generator->buffer, "    ; const declaration of variable: ");
+        strcat(generator->buffer, (char *)identifier->value);
+        strcat(generator->buffer, "\n");
+
+        Variable *variable = create_variable((char *)identifier->value, NODE_STATEMENT_FIELD_CONST, generator->stack_size);
+
+        generator->variables[generator->variable_count++] = variable;
+
+        generate_expression(generator, field_statement->expression); // evaulate expression
+
+        free(identifier->value);
+        free(field_statement);
     } else if (statement->statement_type == NODE_STATEMENT_ASSIGNMENT) {
         NodeStatementAssignment *assignment_statement = (NodeStatementAssignment *)statement->statement;
         Token *identifier = (Token *)assignment_statement->identifier;
@@ -289,6 +314,11 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         if (temp == NULL) {
             fprintf(stderr, "Undeclared identifier: %s\n", (char *)identifier->value);
             exit(EXIT_FAILURE);
+        }
+
+        // attempt to reassign a const field
+        if (temp->field_type == NODE_STATEMENT_FIELD_CONST) {
+            fprintf(stderr, "Attempt to reassign a const field: %s\n", (char *)identifier->value);
         }
 
         strcat(generator->buffer, "    ; reassignment of variable: ");
@@ -310,11 +340,12 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         free(identifier->value);
         free(assignment_statement);
     } else if (statement->statement_type == NODE_STATEMENT_SCOPE) {
-        strcat(generator->buffer, "    ; scope\n");
+        strcat(generator->buffer, "    ; begin scope\n");
         NodeScope *scope = (NodeScope *)statement->statement;
 
         generate_scope(generator, scope);
 
+        strcat(generator->buffer, "    ; end scope\n");
         strcat(generator->buffer, "\n");
 
         free(scope);

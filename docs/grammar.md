@@ -6,13 +6,20 @@ $$
     \begin{cases}
         \text{exit}([\text{Expression}]);
         \\
-        \text{let}\space\text{identifier} = [\text{Expression}];
+        \text{[Field]} = [\text{Expression}];
         \\
         \text{identifier} = \text{[Expression]};
         \\
         \text{if} ([\text{Expression}])[\text{Scope}]\text{[IfPredicate]}
         \\
         [\text{Scope}]
+    \end{cases}
+    \\
+    \text{[Field]} &\to
+    \begin{cases}
+        \text{let}\space\text{identifier}
+        \\
+        \text{const}\space\text{identifier}
     \end{cases}
     \\
     \text{[Scope]} &\to \{{[\text{Statement}]^*}\}

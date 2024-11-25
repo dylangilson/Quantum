@@ -10,7 +10,11 @@
 // ./output; echo $?
 
 /*** TODOs ***/
-// add types
+// add types (String, int, float, char, bool)
+// add logging to console
+// add functions
+// add arrays
+// add structs
 
 #include <stdio.h>
 #include <stdlib.h>
