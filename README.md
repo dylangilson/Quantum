@@ -21,9 +21,9 @@ Quantum is a compiler for a custom C-like programming language
 * Exit
 
 ## Syntax
-[Grammar](docs/grammar.md) is available in the docs folder
-Single-line comments are written as //
-Multi-line comments begin with '/\*' and end with '\*/'
+* [Grammar](docs/grammar.md) is available in the docs folder
+* Single-line comments begin with '//'
+* Multi-line comments begin with '/\*' and end with '\*/'
 
 ## Compilation and Running
 * change directory to the 'src' folder of the project, then running the following commands:
