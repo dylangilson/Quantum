@@ -188,6 +188,8 @@ void generate_scope(Generator *generator, NodeScope *scope) {
 // generate if predicate
 void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, char *end_label) {
     if (if_predicate->predicate_type == NODE_IF_PREDICATE_ELIF) {
+        strcat(generator->buffer, "    ; elif\n");
+
         NodeIfPredicateElif *predicate = (NodeIfPredicateElif *)if_predicate->if_predicate;
 
         generate_expression(generator, predicate->expression);
@@ -199,7 +201,7 @@ void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, 
         strcat(generator->buffer, "    test rax, rax\n");
         strcat(generator->buffer, "    jz ");
         strcat(generator->buffer, label);
-        strcat(generator->buffer, "\n");
+        strcat(generator->buffer, "\n\n");
 
         generate_scope(generator, predicate->scope);
 
@@ -224,6 +226,8 @@ void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, 
 
         free(predicate);
     } else if (if_predicate->predicate_type == NODE_IF_PREDICATE_ELSE) {
+        strcat(generator->buffer, "    ; else\n");
+
         NodeIfPredicateElse *predciate = (NodeIfPredicateElse *)if_predicate->if_predicate;
 
         generate_scope(generator, predciate->scope);
@@ -239,6 +243,8 @@ void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, 
 // generate statement
 void generate_statement(Generator *generator, NodeStatement *statement) {
     if (statement->statement_type == NODE_STATEMENT_EXIT) {
+        strcat(generator->buffer, "    ; exit\n");
+
         NodeStatementExit *exit_statement = (NodeStatementExit *)statement->statement;
         NodeExpression *expression = (NodeExpression *)exit_statement->expression;
 
@@ -261,6 +267,10 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
             exit(EXIT_FAILURE);
         }
 
+        strcat(generator->buffer, "    ; let ");
+        strcat(generator->buffer, (char *)identifier->value);
+        strcat(generator->buffer, "\n");
+
         Variable *variable = create_variable((char *)identifier->value, generator->stack_size);
 
         generator->variables[generator->variable_count++] = variable;
@@ -272,7 +282,7 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
     } else if (statement->statement_type == NODE_STATEMENT_ASSIGNMENT) {
         NodeStatementAssignment *assignment_statement = (NodeStatementAssignment *)statement->statement;
         Token *identifier = (Token *)assignment_statement->identifier;
-        
+
         Variable *temp = find_variable(generator, (char *)identifier->value);
 
         // undeclared identifier
@@ -280,6 +290,10 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
             fprintf(stderr, "Undeclared identifier: %s\n", (char *)identifier->value);
             exit(EXIT_FAILURE);
         }
+
+        strcat(generator->buffer, "    ; reassignment of variable: ");
+        strcat(generator->buffer, (char *)identifier->value);
+        strcat(generator->buffer, "\n");
 
         generate_expression(generator, assignment_statement->expression); // evaluate expression
 
@@ -291,17 +305,21 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         strcat(generator->buffer, "    mov [rsp + ");
         strcat(generator->buffer, count);
-        strcat(generator->buffer, "], rax\n");
+        strcat(generator->buffer, "], rax\n\n");
 
         free(identifier->value);
         free(assignment_statement);
     } else if (statement->statement_type == NODE_STATEMENT_SCOPE) {
+        strcat(generator->buffer, "    ; scope\n");
         NodeScope *scope = (NodeScope *)statement->statement;
 
         generate_scope(generator, scope);
 
+        strcat(generator->buffer, "\n");
+
         free(scope);
     } else if (statement->statement_type == NODE_STATEMENT_IF) {
+        strcat(generator->buffer, "    ; if\n");
         NodeStatementIf *if_statement = (NodeStatementIf *)statement->statement;
 
         generate_expression(generator, if_statement->expression);
@@ -313,7 +331,7 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         strcat(generator->buffer, "    test rax, rax\n");
         strcat(generator->buffer, "    jz ");
         strcat(generator->buffer, label);
-        strcat(generator->buffer, "\n");
+        strcat(generator->buffer, "\n\n");
 
         generate_scope(generator, if_statement->scope);
 
@@ -324,7 +342,7 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
             strcat(generator->buffer, "    jmp ");
             strcat(generator->buffer, end_label);
-            strcat(generator->buffer, "\n");
+            strcat(generator->buffer, "\n\n");
 
             strcat(generator->buffer, label);
             strcat(generator->buffer, ":\n");
@@ -392,13 +410,15 @@ void begin_scope(Generator *generator) {
 void end_scope(Generator *generator) {
     size_t pop_count = generator->variable_count - generator->scopes[--generator->scope_count];
 
-    char count[BUFFER_CAPACITY];
-    memset(count, 0, BUFFER_CAPACITY);
-    snprintf(count, sizeof(count), "%zu", pop_count * 8); // 8 bytes -> 64 bits
+    if (pop_count != 0) {
+        char count[BUFFER_CAPACITY];
+        memset(count, 0, BUFFER_CAPACITY);
+        snprintf(count, sizeof(count), "%zu", pop_count * 8); // 8 bytes -> 64 bits
 
-    strcat(generator->buffer, "    add rsp, ");
-    strcat(generator->buffer, count);
-    strcat(generator->buffer, "\n");
+        strcat(generator->buffer, "    add rsp, ");
+        strcat(generator->buffer, count);
+        strcat(generator->buffer, "\n");
+    }
 
     generator->stack_size -= pop_count;
 

@@ -10,8 +10,6 @@
 // ./output; echo $?
 
 /*** TODOs ***/
-// add comments to ASM
-// add const
 // add types
 
 #include <stdio.h>
