@@ -22,7 +22,7 @@ Tokenizer *create_tokenizer(const char *src) {
 }
 
 // peek at character that is count indices ahead of current index
-char peek_tokenizer(Tokenizer tokenizer, size_t offset) {
+char peek_tokenizer(const Tokenizer tokenizer, const size_t offset) {
     if (tokenizer.index + offset >= strlen(tokenizer.src)) {
         return '\0'; // empty string
     }
@@ -37,6 +37,8 @@ char consume_tokenizer(Tokenizer *tokenizer) {
 
 // convert string into list of tokens
 LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
+    size_t line_number = 1;
+
     while(peek_tokenizer(*tokenizer, 0) != '\0') {
         if (isalpha(peek_tokenizer(*tokenizer, 0))) {
             char c = consume_tokenizer(tokenizer); // get character
@@ -50,24 +52,24 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
 
             // check for key words
             if (strncmp(tokenizer->buffer, "exit", strlen(tokenizer->buffer)) == 0) {
-                push_tail(tokens, NULL, EXIT); // append exit token
+                push_tail(tokens, NULL, EXIT, line_number); // append exit token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else if (strncmp(tokenizer->buffer, "let", strlen(tokenizer->buffer)) == 0) {
-                push_tail(tokens, NULL, LET); // append let token
+                push_tail(tokens, NULL, LET, line_number); // append let token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else if (strncmp(tokenizer->buffer, "if", strlen(tokenizer->buffer)) == 0) {
-                push_tail(tokens, NULL, IF); // append if token
+                push_tail(tokens, NULL, IF, line_number); // append if token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else if (strncmp(tokenizer->buffer, "elif", strlen(tokenizer->buffer)) == 0) {
-                push_tail(tokens, NULL, ELIF); // append elif token
+                push_tail(tokens, NULL, ELIF, line_number); // append elif token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else if (strncmp(tokenizer->buffer, "else", strlen(tokenizer->buffer)) == 0) {
-                push_tail(tokens, NULL, ELSE); // append else token
+                push_tail(tokens, NULL, ELSE, line_number); // append else token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else {
                 char *identifier = (char *)malloc((strlen(tokenizer->buffer) + 1) * sizeof(char));
                 strcpy(identifier, tokenizer->buffer);
-                push_tail(tokens, identifier, IDENTIFIER);
+                push_tail(tokens, identifier, IDENTIFIER, line_number);
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             }
         } else if (isdigit(peek_tokenizer(*tokenizer, 0))) {
@@ -81,7 +83,7 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             }
 
             long temp = atoi(tokenizer->buffer); // convert string to number
-            push_tail(tokens, (int *)temp, INTEGER_LITERAL); // append number to buffer
+            push_tail(tokens, (int *)temp, INTEGER_LITERAL, line_number); // append number to buffer
             memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
         } else if (peek_tokenizer(*tokenizer, 0) == '/' && peek_tokenizer(*tokenizer, 1) != '\0' && peek_tokenizer(*tokenizer, 1) == '/') {
             consume_tokenizer(tokenizer); // consume '/'
@@ -99,7 +101,11 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
                     break;               
                 }
 
-                consume_tokenizer(tokenizer); // consume comment
+                char c = consume_tokenizer(tokenizer); // consume comment
+
+                if (c == '\n') {
+                    line_number++;
+                }
             }
 
             // check for end of multi-line comment
@@ -112,38 +118,41 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             consume_tokenizer(tokenizer); // consume '/'
         } else if (peek_tokenizer(*tokenizer, 0) == '(') {
             consume_tokenizer(tokenizer); // consume '('
-            push_tail(tokens, NULL, OPEN_PARENTHESIS); // append open parenthesis
+            push_tail(tokens, NULL, OPEN_PARENTHESIS, line_number); // append open parenthesis
         } else if (peek_tokenizer(*tokenizer, 0) == ')'){
             consume_tokenizer(tokenizer); // consume ')'
-            push_tail(tokens, NULL, CLOSE_PARENTHESIS); // append close parenthesis
+            push_tail(tokens, NULL, CLOSE_PARENTHESIS, line_number); // append close parenthesis
         } else if (peek_tokenizer(*tokenizer, 0) == '='){
             consume_tokenizer(tokenizer); // consume '='
-            push_tail(tokens, NULL, EQUALS); // append equals
+            push_tail(tokens, NULL, EQUALS, line_number); // append equals
         } else if (peek_tokenizer(*tokenizer, 0) == '+') {
             consume_tokenizer(tokenizer); // consume '+'
-            push_tail(tokens, NULL, PLUS); // append plus
+            push_tail(tokens, NULL, PLUS, line_number); // append plus
         } else if (peek_tokenizer(*tokenizer, 0) == '-') {
             consume_tokenizer(tokenizer); // consume '-'
-            push_tail(tokens, NULL, MINUS); // append minus
+            push_tail(tokens, NULL, MINUS, line_number); // append minus
         } else if (peek_tokenizer(*tokenizer, 0) == '*') {
             consume_tokenizer(tokenizer); // consume '*'
-            push_tail(tokens, NULL, STAR); // append star
+            push_tail(tokens, NULL, STAR, line_number); // append star
         } else if (peek_tokenizer(*tokenizer, 0) == '/') {
             consume_tokenizer(tokenizer); // consume '/'
-            push_tail(tokens, NULL, FORWARD_SLASH); // append forward slash
+            push_tail(tokens, NULL, FORWARD_SLASH, line_number); // append forward slash
         } else if (peek_tokenizer(*tokenizer, 0) == '{') {
             consume_tokenizer(tokenizer); // consume '{'
-            push_tail(tokens, NULL, OPEN_BRACKET); // append open bracket
+            push_tail(tokens, NULL, OPEN_BRACKET, line_number); // append open bracket
         } else if (peek_tokenizer(*tokenizer, 0) == '}') {
             consume_tokenizer(tokenizer); // consume '}'
-            push_tail(tokens, NULL, CLOSE_BRACKET); // append close bracket
+            push_tail(tokens, NULL, CLOSE_BRACKET, line_number); // append close bracket
         } else if (peek_tokenizer(*tokenizer, 0) == ';') {
             consume_tokenizer(tokenizer); // consume ';'
-            push_tail(tokens, NULL, SEMICOLON); // append semicolon
+            push_tail(tokens, NULL, SEMICOLON, line_number); // append semicolon
+        } else if (peek_tokenizer(*tokenizer, 0) == '\n') {
+            consume_tokenizer(tokenizer); // consume '\n'
+            line_number++; // increment to new line
         } else if (isspace(peek_tokenizer(*tokenizer, 0))) {
             consume_tokenizer(tokenizer); // ignore whitespace
         } else {
-            fprintf(stderr, "Invalid expression\n");
+            fprintf(stderr, "Invalid token\n");
             exit(EXIT_FAILURE);
         }
     }

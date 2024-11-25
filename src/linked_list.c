@@ -9,15 +9,17 @@
 
 #include <linked_list.h>
 
-// NOTE: pushing a value to the list that is not a pointer requires a cast to a pointer with this syntax : push_head(list, (int *)<VALUE>, INTEGER_LITERAL);
-// NOTE: reading a value popped from the list has syntax : int *output = pop_head(list); printf("%ld", (long)output);
-// NOTE: when using a linked list, always free nodes after popping
+/*** NOTES ***/
+// pushing a value to the list that is not a pointer requires a cast to a pointer with this syntax : push_head(list, (int *)<VALUE>, INTEGER_LITERAL, line_number);
+// reading a value popped from the list has syntax : int *output = pop_head(list); printf("%ld", (long)output);
+// when using the linked list, always free nodes after popping
 
 // create node
-Node *create_node(void *value, TokenType token_type) {
+Node *create_node(void *value, TokenType token_type, size_t line_number) {
 	Token *token = (Token *)malloc(sizeof(Token));
 	token->value = value;
 	token->token_type = token_type;
+	token->line_number = line_number;
 
 	Node *temp = (Node *)malloc(sizeof(Node));
 	temp->token = token;
@@ -42,13 +44,13 @@ bool is_empty(LinkedList list) {
 }
 
 // push node to head of list
-void push_head(LinkedList *list, void *value, TokenType token_type) {
+void push_head(LinkedList *list, void *value, TokenType token_type, size_t line_number) {
 	if (is_empty(*list)) {
-		list->head = create_node(value, token_type);
+		list->head = create_node(value, token_type, line_number);
 		list->tail = list->head;
 	} else {
 		Node *temp = list->head;
-		list->head = create_node(value, token_type);
+		list->head = create_node(value, token_type, line_number);
 		list->head->next = temp;
 	}
 
@@ -56,13 +58,13 @@ void push_head(LinkedList *list, void *value, TokenType token_type) {
 }
 
 // push node to tail of list
-void push_tail(LinkedList *list, void *value, TokenType token_type) {
+void push_tail(LinkedList *list, void *value, TokenType token_type, size_t line_number) {
 	if (is_empty(*list)) {
-		list->head = create_node(value, token_type);
+		list->head = create_node(value, token_type, line_number);
 		list->tail = list->head;
 	} else {
 		Node* temp = list->tail;
-		list->tail = create_node(value, token_type);
+		list->tail = create_node(value, token_type, line_number);
 		temp->next = list->tail;
 	}
 

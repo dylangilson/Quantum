@@ -35,10 +35,10 @@ NodeTermParenthesis *create_node_term_parenthesis(NodeExpression *expression) {
 }
 
 // create term node
-NodeTerm *create_node_term(void *value, NodeTermType type) {
+NodeTerm *create_node_term(void *value, NodeTermType term_type) {
     NodeTerm *term = (NodeTerm *)malloc(sizeof(NodeTerm));
     term->value = value;
-    term->term_type = type;
+    term->term_type = term_type;
 
     return term;
 }
@@ -52,8 +52,8 @@ NodeScope *create_scope() {
 }
 
 // get binary precedence from token type
-int get_binary_precedence(TokenType type) {
-    switch (type) {
+int get_binary_precedence(const TokenType token_type) {
+    switch (token_type) {
         case STAR:
         case FORWARD_SLASH:
             return 1;
@@ -75,10 +75,10 @@ BinaryExpression *create_binary_expression(NodeExpression *left_hand_side, NodeE
 }
 
 // create binary expresion node
-NodeBinaryExpression *create_node_binary_expression(BinaryExpression *expression, NodeBinaryExpressionType type) {
+NodeBinaryExpression *create_node_binary_expression(BinaryExpression *expression, NodeBinaryExpressionType binary_expression_type) {
     NodeBinaryExpression *binary_expression = (NodeBinaryExpression *)malloc(sizeof(NodeBinaryExpression));
     binary_expression->expression = expression;
-    binary_expression->type = type;
+    binary_expression->binary_expression_type = binary_expression_type;
 
     return binary_expression;
 }
@@ -100,6 +100,8 @@ NodeStatementLet *create_node_statement_let(Token *token, NodeExpression *expres
     return if_statement;
 }
 
+
+
 // create if statement node
 NodeStatementIf *create_node_statement_if(NodeExpression *expression, NodeScope *scope) {
     NodeStatementIf *if_statement = (NodeStatementIf *)malloc(sizeof(NodeStatementIf));
@@ -109,36 +111,40 @@ NodeStatementIf *create_node_statement_if(NodeExpression *expression, NodeScope 
     return if_statement;
 }
 
+// create assignment statement node
+NodeStatementAssignment *create_node_statement_assignment(Token *token, NodeExpression *expression) {
+    NodeStatementAssignment *assignment = (NodeStatementAssignment *)malloc(sizeof(NodeStatementAssignment));
+    assignment->identifier = token;
+    assignment->expression = expression;
+
+    return assignment;
+}
+
 // create statement node
-NodeStatement *create_node_statement(NodeExpression *expression, Token *identifier, NodeStatementType type) {
+NodeStatement *create_node_statement(Parser *parser, NodeExpression *expression, Token *identifier, NodeScope *scope, NodeStatementType statement_type) {
     NodeStatement *statement = (NodeStatement *)malloc(sizeof(NodeStatement));
     
-    if (type == NODE_STATEMENT_EXIT) {
+    if (statement_type == NODE_STATEMENT_EXIT) {
         statement->statement = create_node_statement_exit(expression);
-    } else if (type == NODE_STATEMENT_LET) {
+    } else if (statement_type == NODE_STATEMENT_LET) {
         statement->statement = create_node_statement_let(identifier, expression);
+    } else if (statement_type == NODE_STATEMENT_ASSIGNMENT) {
+        statement->statement = create_node_statement_assignment(identifier, expression);
+    } else if (statement_type == NODE_STATEMENT_IF) {
+        NodeStatementIf *if_statement = create_node_statement_if(expression, scope);
+        if_statement->if_predicate = parse_if_predicate(parser);
+
+        statement->statement = if_statement;
+    } else if (statement_type == NODE_STATEMENT_SCOPE) {
+        statement->statement = scope;
     } else {
         fprintf(stderr, "Invalid NodeStatementType\n");
         exit(EXIT_FAILURE);
     }
 
-    statement->statement_type = type;
+    statement->statement_type = statement_type;
 
     return statement;
-}
-
-// peek at token that is count indices ahead of current index
-Token *peek_parser(Parser parser, size_t offset) {
-    if (parser.index + offset >= parser.tokens->count) {
-        return NULL; // index out of bounds -> no token to return
-    }
-
-    return peek_at(*parser.tokens, parser.index + offset)->token;
-}
-
-// consume token at current index of parser
-Token *consume_parser(Parser *parser) {
-    return peek_at(*parser->tokens, parser->index++)->token;
 }
 
 // parse term
@@ -151,17 +157,12 @@ NodeTerm *parse_term(Parser *parser) {
         consume_parser(parser); // consume '('
         NodeExpression *expression = parse_expression(parser, 0);
 
+        // expected expression
         if (expression == NULL) {
-            fprintf(stderr, "Expected expression\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "expression");
         }
 
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_PARENTHESIS) {
-            fprintf(stderr, "Expected ')'\n");
-            exit(EXIT_FAILURE);
-        }
-
-        consume_parser(parser); // consume ')'
+        try_consume_parser(parser, CLOSE_PARENTHESIS); // consume ')'
 
         NodeTermParenthesis *term_parenthesis = create_node_term_parenthesis(expression);
         NodeTerm *term = create_node_term(term_parenthesis, NODE_TERM_PARENTHESIS);
@@ -174,7 +175,7 @@ NodeTerm *parse_term(Parser *parser) {
 }
 
 // parse expression
-NodeExpression *parse_expression(Parser *parser, int min_precedence) {
+NodeExpression *parse_expression(Parser *parser, const int min_precedence) {
     NodeTerm *term = parse_term(parser);
 
     if (term == NULL) {
@@ -203,8 +204,7 @@ NodeExpression *parse_expression(Parser *parser, int min_precedence) {
         NodeExpression *right_hand_side = parse_expression(parser, next_min_precedence);
 
         if (right_hand_side == NULL) {
-            fprintf(stderr, "Unable to parse expression\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "expression");
         }
 
         NodeExpression *left_hand_side2 = (NodeExpression *)malloc(sizeof(NodeExpression));
@@ -251,12 +251,7 @@ NodeScope *parse_scope(Parser *parser) {
         scope->statements[scope->scope_size++] = statement;
     }
 
-    if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_BRACKET) {
-        fprintf(stderr, "Expected '}'\n");
-        exit(EXIT_FAILURE);
-    }
-
-    consume_parser(parser); // consume '}'
+    try_consume_parser(parser, CLOSE_BRACKET);
 
     return scope;
 }
@@ -272,35 +267,23 @@ NodeIfPredicate *parse_if_predicate(Parser *parser) {
     if (peek_parser(*parser, 0)->token_type == ELIF) {
         consume_parser(parser); // consume elif
 
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != OPEN_PARENTHESIS) {
-            fprintf(stderr, "Expected '('\n");
-            exit(EXIT_FAILURE);
-        }
-
-        consume_parser(parser); // consume '('
+        try_consume_parser(parser, OPEN_PARENTHESIS); // consume '('
 
         NodeIfPredicateElif *predicate = (NodeIfPredicateElif *)malloc(sizeof(NodeIfPredicateElif));
         NodeExpression *expression = parse_expression(parser, 0);
 
         if (expression == NULL) {
-            fprintf(stderr, "Expected expression\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "expression");
         }
 
         predicate->expression = expression;
 
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_PARENTHESIS) {
-            fprintf(stderr, "Expected ')'\n");
-            exit(EXIT_FAILURE);
-        }
-
-        consume_parser(parser); // consume ')'
+        try_consume_parser(parser, CLOSE_PARENTHESIS); // consume ')'
 
         NodeScope *scope = parse_scope(parser);
 
         if (scope == NULL) {
-            fprintf(stderr, "Expected scope\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "scope");
         }
 
         predicate->scope = scope;
@@ -316,8 +299,7 @@ NodeIfPredicate *parse_if_predicate(Parser *parser) {
         NodeScope *scope = parse_scope(parser);
 
         if (scope == NULL) {
-            fprintf(stderr, "Expected scope\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "scope");
         }
 
         predicate->scope = scope;
@@ -340,150 +322,77 @@ NodeStatement *parse_statement(Parser *parser) {
 
     NodeStatement *statement;
 
-    if (peek_parser(*parser, 0)->token_type == EXIT && peek_parser(*parser, 1) != NULL && peek_parser(*parser, 1)->token_type == OPEN_PARENTHESIS) {
+    if (peek_parser(*parser, 0)->token_type == EXIT) {
         consume_parser(parser); // consume exit
-        consume_parser(parser); // consume '('
+        try_consume_parser(parser, OPEN_PARENTHESIS); // consume '('
 
         NodeExpression *expression = parse_expression(parser, 0);
 
         if (expression == NULL) {
-            fprintf(stderr, "Invalid expression\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "expression");
         }
 
-        NodeStatementExit *exit_statement = (NodeStatementExit *)malloc(sizeof(NodeStatementExit));
-        exit_statement->expression = expression;
+        try_consume_parser(parser, CLOSE_PARENTHESIS); // consume ')'
+        try_consume_parser(parser, SEMICOLON); // consume ';'
 
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_PARENTHESIS) {
-            fprintf(stderr, "Expected ')'\n");
-            exit(EXIT_FAILURE);
-        }
-
-        consume_parser(parser); // consume ')'
-
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != SEMICOLON) {
-            fprintf(stderr, "Expected ';'\n");
-            exit(EXIT_FAILURE);
-        }
-
-        consume_parser(parser); // consume ';'
-
-        statement = (NodeStatement *)malloc(sizeof(NodeStatement));
-        statement->statement = exit_statement;
-        statement->statement_type = NODE_STATEMENT_EXIT;
+        statement = create_node_statement(parser, expression, NULL, NULL, NODE_STATEMENT_EXIT);
     } else if (peek_parser(*parser, 0)->token_type == LET) {
         consume_parser(parser); // consume let
 
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != IDENTIFIER) {
-            fprintf(stderr, "Expected identifier\n");
-            exit(EXIT_FAILURE);
-        }
-
-        Token *identifier = consume_parser(parser); // consume identifier
-
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != EQUALS) {
-            fprintf(stderr, "Expected '='\n");
-            exit(EXIT_FAILURE);
-        }
+        Token *identifier = try_consume_parser(parser, IDENTIFIER); // consume identifier
         
-        consume_parser(parser); // consume '='
+        try_consume_parser(parser, EQUALS); // consume '='
 
         NodeExpression *expression = parse_expression(parser, 0);
 
         if (expression == NULL) {
-            fprintf(stderr, "Invalid expression\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "expression");
         }
 
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != SEMICOLON) {
-            fprintf(stderr, "Expected ';'\n");
-            exit(EXIT_FAILURE);
-        }
+        try_consume_parser(parser, SEMICOLON); // consume ';'
 
-        consume_parser(parser); // consume ';'
-
-        statement = create_node_statement(expression, identifier, NODE_STATEMENT_LET);
+        statement = create_node_statement(parser, expression, identifier, NULL, NODE_STATEMENT_LET);
     } else if (peek_parser(*parser, 0)->token_type == IDENTIFIER) {
         Token *identifier = consume_parser(parser); // consume identifier
 
-        NodeStatementAssignment *assignment = (NodeStatementAssignment *)malloc(sizeof(NodeStatementAssignment));
-
-        assignment->identifier = identifier;
-
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != EQUALS) {
-            fprintf(stderr, "Expected '='\n");
-            exit(EXIT_FAILURE);
-        }
-        
-        consume_parser(parser); // consume '='
+        try_consume_parser(parser, EQUALS); // consume '='
 
         NodeExpression *expression = parse_expression(parser, 0);
 
         if (expression == NULL) {
-            fprintf(stderr, "Invalid expression\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "expression");
         }
 
-        assignment->expression = expression;
+        try_consume_parser(parser, SEMICOLON); // consume ';'
 
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != SEMICOLON) {
-            fprintf(stderr, "Expected ';'\n");
-            exit(EXIT_FAILURE);
-        }
-
-        consume_parser(parser); // consume ';'
-
-        statement = (NodeStatement *)malloc(sizeof(NodeStatement));
-        statement->statement = assignment;
-        statement->statement_type = NODE_STATEMENT_ASSIGNMENT;
-    } else if (peek_parser(*parser, 0)->token_type == OPEN_BRACKET) {
-        NodeScope *scope = parse_scope(parser);
-
-        if (scope == NULL) {
-            fprintf(stderr, "Invalid scope\n");
-            exit(EXIT_FAILURE);
-        }
-
-        statement = (NodeStatement *)malloc(sizeof(NodeStatement));
-        statement->statement = scope;
-        statement->statement_type = NODE_STATEMENT_SCOPE;
+        statement = create_node_statement(parser, expression, identifier, NULL, NODE_STATEMENT_ASSIGNMENT);
     } else if (peek_parser(*parser, 0)->token_type == IF) {
         consume_parser(parser); // consume if
-
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != OPEN_PARENTHESIS) {
-            fprintf(stderr, "Expected '('\n");
-            exit(EXIT_FAILURE);
-        }
-
-        consume_parser(parser); // consume '('
+        try_consume_parser(parser, OPEN_PARENTHESIS); // consume '('
    
         NodeExpression *expression = parse_expression(parser, 0);
 
         if (expression == NULL) {
-            fprintf(stderr, "Invalid expression\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "expression");
         }
 
-        if (peek_parser(*parser, 0) == NULL || peek_parser(*parser, 0)->token_type != CLOSE_PARENTHESIS) {
-            fprintf(stderr, "Expected ')'\n");
-            exit(EXIT_FAILURE);
-        }
-
-        consume_parser(parser); // consume ')'
+        try_consume_parser(parser, CLOSE_PARENTHESIS); // consume ')'
 
         NodeScope *scope = parse_scope(parser);
 
         if (scope == NULL) {
-            fprintf(stderr, "Invalid scope\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "scope");
         }
 
-        NodeStatementIf *if_statement = create_node_statement_if(expression, scope);
-        if_statement->if_predicate = parse_if_predicate(parser);
+        statement = create_node_statement(parser, expression, NULL, scope, NODE_STATEMENT_IF);
+    } else if (peek_parser(*parser, 0)->token_type == OPEN_BRACKET) {
+        NodeScope *scope = parse_scope(parser);
 
-        statement = (NodeStatement *)malloc(sizeof(NodeStatement));
-        statement->statement = if_statement;
-        statement->statement_type = NODE_STATEMENT_IF;
+        if (scope == NULL) {
+            parser_error(*parser, "scope");
+        }
+
+        statement = create_node_statement(parser, NULL, NULL, scope, NODE_STATEMENT_SCOPE);
     } else {
         return NULL;
     }
@@ -499,12 +408,84 @@ NodeProgram *parse_program(Parser *parser) {
         NodeStatement *statement = parse_statement(parser);
 
         if (statement == NULL) {
-            fprintf(stderr, "Invalid statement\n");
-            exit(EXIT_FAILURE);
+            parser_error(*parser, "statement");
         }
 
         program->statements[program->program_length++] = statement;
     }
 
     return program;
+}
+
+// convert token type to string
+char *token_to_string(const TokenType token_type) {
+    switch (token_type) {
+        case EXIT:
+            return "'exit'";
+        case INTEGER_LITERAL:
+            return "integer literal";
+        case SEMICOLON:
+            return "';'";
+        case OPEN_PARENTHESIS:
+            return "'('";
+        case CLOSE_PARENTHESIS:
+            return "')'";
+        case IDENTIFIER:
+            return "identifier";
+        case LET:
+            return "'let'";
+        case EQUALS:
+            return "'='";
+        case PLUS:
+            return "'+'";
+        case STAR:
+            return "'*'";
+        case MINUS:
+            return "'-'";
+        case FORWARD_SLASH:
+            return "'/'";
+        case OPEN_BRACKET:
+            return "'{'";
+        case CLOSE_BRACKET:
+            return "'}'";
+        case IF:
+            return "'if'";
+        case ELIF:
+            return "'elif'";
+        case ELSE:
+            return "'else'";
+        default:
+            return NULL;
+    }
+}
+
+// peek at token that is count indices ahead of current index
+Token *peek_parser(const Parser parser, const size_t offset) {
+    if (parser.index + offset >= parser.tokens->count) {
+        return NULL; // index out of bounds -> no token to return
+    }
+
+    return peek_at(*parser.tokens, parser.index + offset)->token;
+}
+
+// consume token at current index of parser
+Token *consume_parser(Parser *parser) {
+    return peek_at(*parser->tokens, parser->index++)->token;
+}
+
+// try to consume token at current index of parser, otherwise throw error
+Token *try_consume_parser(Parser *parser, const TokenType token_type) {
+    if (peek_parser(*parser, 0) != NULL && peek_parser(*parser, 0)->token_type == token_type) {
+        return consume_parser(parser);
+    }
+
+    parser_error(*parser, token_to_string(token_type));
+
+    return NULL;
+}
+
+// parser error on line x
+void parser_error(Parser parser, const char *message) {
+    fprintf(stderr, "Expected %s on line %zu\n", message, peek_parser(parser, -1)->line_number);
+    exit(EXIT_FAILURE);
 }

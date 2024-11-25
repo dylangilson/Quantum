@@ -10,8 +10,9 @@
 // ./output; echo $?
 
 /*** TODOs ***/
-// refactor (add consume() and try_consume()), use const, add comments to ASM
+// add comments to ASM
 // add const
+// add types
 
 #include <stdio.h>
 #include <stdlib.h>

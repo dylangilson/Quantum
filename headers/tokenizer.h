@@ -17,6 +17,6 @@ typedef struct Tokenizer {
 } Tokenizer;
 
 Tokenizer *create_tokenizer(const char *src);
-char peek_tokenizer(Tokenizer tokenizer, size_t offset);
+char peek_tokenizer(const Tokenizer tokenizer, const size_t offset);
 char consume_tokenizer(Tokenizer *tokenzier);
 LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens);

@@ -49,7 +49,7 @@ typedef enum NodeBinaryExpressionType {
 
 typedef struct NodeBinaryExpression {
     BinaryExpression *expression;
-    NodeBinaryExpressionType type;
+    NodeBinaryExpressionType binary_expression_type;
 } NodeBinaryExpression;
 
 typedef struct NodeStatementExit {
@@ -125,20 +125,24 @@ typedef struct Parser {
 Parser *create_parser(LinkedList *list);
 NodeProgram *create_program();
 NodeTermParenthesis *create_node_term_parenthesis(NodeExpression *expression);
-NodeTerm *create_node_term(void *value, NodeTermType type);
+NodeTerm *create_node_term(void *value, NodeTermType term_type);
 NodeScope *create_scope();
-int get_binary_precedence(TokenType type);
+int get_binary_precedence(const TokenType token_type);
 BinaryExpression *create_binary_expression(NodeExpression *left_hand_side, NodeExpression *right_hand_side);
-NodeBinaryExpression *create_node_binary_expression(BinaryExpression *expression, NodeBinaryExpressionType type);
+NodeBinaryExpression *create_node_binary_expression(BinaryExpression *expression, NodeBinaryExpressionType binary_expression_type);
 NodeStatementExit *create_node_statement_exit(NodeExpression *expression);
 NodeStatementLet *create_node_statement_let(Token *identifier, NodeExpression *expression);
+NodeStatementAssignment *create_node_statement_assignment(Token *token, NodeExpression *expression);
 NodeStatementIf *create_node_statement_if(NodeExpression *expression, NodeScope *scope);
-NodeStatement *create_node_statement(NodeExpression *expression, Token *identifier, NodeStatementType type);
-Token *peek_parser(Parser parser, size_t offset);
-Token *consume_parser(Parser *parser);
+NodeStatement *create_node_statement(Parser *parser, NodeExpression *expression, Token *identifier, NodeScope *scope, NodeStatementType statement_type);
 NodeTerm *parse_term(Parser *parser);
-NodeExpression *parse_expression(Parser *parser, int min_precedence);
+NodeExpression *parse_expression(Parser *parser, const int min_precedence);
 NodeScope *parse_scope(Parser *parser);
 NodeIfPredicate *parse_if_predicate(Parser *parser);
 NodeStatement *parse_statement(Parser *parser);
 NodeProgram *parse_program(Parser *parser);
+char *token_to_string(const TokenType token_type);
+Token *peek_parser(const Parser parser, const size_t offset);
+Token *consume_parser(Parser *parser);
+Token *try_consume_parser(Parser *parser, const TokenType token_type);
+void parser_error(Parser parser, const char *message);

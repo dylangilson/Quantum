@@ -34,6 +34,7 @@ typedef enum TokenType {
 typedef struct Token {
     void *value;
     TokenType token_type;
+    size_t line_number;
 } Token;
 
 typedef struct Node {
@@ -47,11 +48,11 @@ typedef struct LinkedList {
     size_t count;
 } LinkedList;
 
-Node *create_node(void *value, TokenType token_type);
+Node *create_node(void *value, TokenType token_type, size_t line_number);
 LinkedList *create_list();
 bool is_empty(LinkedList list);
-void push_head(LinkedList *list, void *value, TokenType token_type);
-void push_tail(LinkedList *list, void *value, TokenType token_type);
+void push_head(LinkedList *list, void *value, TokenType token_type, size_t line_number);
+void push_tail(LinkedList *list, void *value, TokenType token_type, size_t line_number);
 Node *peek_at(LinkedList list, size_t index);
 Node *peek_head(LinkedList list);
 Node *peek_tail(LinkedList list);

@@ -142,13 +142,13 @@ void generate_expression(Generator *generator, NodeExpression *expression) {
         pop(generator, "rax");
         pop(generator, "rbx");
 
-        if (binary_expression_node->type == NODE_BINARY_MULTIPLICATION) {
+        if (binary_expression_node->binary_expression_type == NODE_BINARY_MULTIPLICATION) {
             strcat(generator->buffer, "    mul rbx\n");
-        } else if (binary_expression_node->type == NODE_BINARY_DIVISION) {
+        } else if (binary_expression_node->binary_expression_type == NODE_BINARY_DIVISION) {
             strcat(generator->buffer, "    div rbx\n");
-        } else if (binary_expression_node->type == NODE_BINARY_ADDITION) {
+        } else if (binary_expression_node->binary_expression_type == NODE_BINARY_ADDITION) {
             strcat(generator->buffer, "    add rax, rbx\n");
-        } else if (binary_expression_node->type == NODE_BINARY_SUBTRACTION) {
+        } else if (binary_expression_node->binary_expression_type == NODE_BINARY_SUBTRACTION) {
             strcat(generator->buffer, "    sub rax, rbx\n");
         }
 
