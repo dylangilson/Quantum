@@ -170,7 +170,7 @@ NodeTerm *parse_term(Parser *parser) {
 
         return term;
     } else {
-        fprintf(stderr, "Invalid term\n");
+        fprintf(stderr, "Invalid term on line %zu\n", peek_parser(*parser, -1)->line_number);
         exit(EXIT_FAILURE);
     }
 }

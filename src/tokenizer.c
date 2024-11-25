@@ -51,22 +51,22 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             }
 
             // check for key words
-            if (strncmp(tokenizer->buffer, "exit", strlen(tokenizer->buffer)) == 0) {
+            if (strcmp(tokenizer->buffer, "exit") == 0) {
                 push_tail(tokens, NULL, EXIT, line_number); // append exit token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
-            } else if (strncmp(tokenizer->buffer, "let", strlen(tokenizer->buffer)) == 0) {
+            } else if (strcmp(tokenizer->buffer, "let") == 0) {
                 push_tail(tokens, NULL, LET, line_number); // append let token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
-            } else if (strncmp(tokenizer->buffer, "const", strlen(tokenizer->buffer)) == 0) {
+            } else if (strcmp(tokenizer->buffer, "const") == 0) {
                 push_tail(tokens, NULL, CONST, line_number); // append let token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
-            } else if (strncmp(tokenizer->buffer, "if", strlen(tokenizer->buffer)) == 0) {
+            } else if (strcmp(tokenizer->buffer, "if") == 0) {
                 push_tail(tokens, NULL, IF, line_number); // append if token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
-            } else if (strncmp(tokenizer->buffer, "elif", strlen(tokenizer->buffer)) == 0) {
+            } else if (strcmp(tokenizer->buffer, "elif") == 0) {
                 push_tail(tokens, NULL, ELIF, line_number); // append elif token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
-            } else if (strncmp(tokenizer->buffer, "else", strlen(tokenizer->buffer)) == 0) {
+            } else if (strcmp(tokenizer->buffer, "else") == 0) {
                 push_tail(tokens, NULL, ELSE, line_number); // append else token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else {
@@ -113,7 +113,7 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
 
             // check for end of multi-line comment
             if (peek_tokenizer(*tokenizer, 0) == feof(stdin)) {
-                fprintf(stderr, "Expected '*/'\n");
+                fprintf(stderr, "Expected '*/' on line %zu\n", line_number);
                 exit(EXIT_FAILURE);
             }
 
@@ -155,7 +155,7 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
         } else if (isspace(peek_tokenizer(*tokenizer, 0))) {
             consume_tokenizer(tokenizer); // ignore whitespace
         } else {
-            fprintf(stderr, "Invalid token\n");
+            fprintf(stderr, "Invalid token on line %zu\n", line_number);
             exit(EXIT_FAILURE);
         }
     }

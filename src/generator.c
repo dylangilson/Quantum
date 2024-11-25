@@ -53,7 +53,7 @@ char *create_label(Generator *generator) {
 // find variable in array
 Variable *find_variable(Generator *generator, char *identifier) {
     for (size_t i = 0; i < generator->variable_count; i++) {
-        if (strncmp(generator->variables[i]->identifier, identifier, strlen(identifier)) == 0) {
+        if (strcmp(generator->variables[i]->identifier, identifier) == 0) {
             return generator->variables[i];
         }
     }
@@ -95,7 +95,7 @@ void generate_term(Generator *generator, NodeTerm *term) {
         Variable *variable = find_variable(generator, (char *)identifier->value);
 
         if (variable == NULL) {
-            fprintf(stderr, "Identifier: %s not declared\n", (char *)identifier->value);
+            fprintf(stderr, "Identifier: %s not declared before attempted access on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
             exit(EXIT_FAILURE);
         }
 
@@ -264,7 +264,7 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         // identifier already declared
         if (temp != NULL) {
-            fprintf(stderr, "Identifier: %s already declared\n", (char *)identifier->value);
+            fprintf(stderr, "Identifier: %s already declared before attempted re-declaration on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
             exit(EXIT_FAILURE);
         }
 
@@ -288,7 +288,7 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         // identifier already declared
         if (temp != NULL) {
-            fprintf(stderr, "Identifier: %s already declared\n", (char *)identifier->value);
+            fprintf(stderr, "Identifier: %s already declared before attempted re-declaration on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
             exit(EXIT_FAILURE);
         }
 
@@ -312,13 +312,13 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         // undeclared identifier
         if (temp == NULL) {
-            fprintf(stderr, "Undeclared identifier: %s\n", (char *)identifier->value);
+            fprintf(stderr, "Undeclared identifier: %s on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
             exit(EXIT_FAILURE);
         }
 
         // attempt to reassign a const field
         if (temp->field_type == NODE_STATEMENT_FIELD_CONST) {
-            fprintf(stderr, "Attempt to reassign a const field: %s\n", (char *)identifier->value);
+            fprintf(stderr, "Attempt to reassign a const field: %s on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
         }
 
         strcat(generator->buffer, "    ; reassignment of variable: ");
