@@ -201,14 +201,18 @@ void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, 
 
         strcat(generator->buffer, "    test rax, rax\n");
         strcat(generator->buffer, "    jz ");
-        strcat(generator->buffer, label);
+        if (predicate->if_predicate != NULL) {
+            strcat(generator->buffer, label);
+        } else {
+            strcat(generator->buffer, end_label);
+        }
+        
         strcat(generator->buffer, "\n\n");
 
         generate_scope(generator, predicate->scope);
 
         free(predicate->scope);
 
-        strcat(generator->buffer, "\n");
         strcat(generator->buffer, "    jmp ");
         strcat(generator->buffer, end_label);
         strcat(generator->buffer, "\n");
@@ -223,6 +227,8 @@ void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, 
             generate_if_predicate(generator, predicate->if_predicate, end_label);
 
             free(predicate->if_predicate);
+        } else {
+            strcat(generator->buffer, "\n");
         }
 
         free(predicate);

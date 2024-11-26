@@ -504,7 +504,7 @@ Token *try_consume_parser(Parser *parser, const TokenType token_type) {
 // parser error on line x
 void parser_error(Parser parser, const char *message) {
     if (peek_parser(parser, -1) != NULL) {
-        fprintf(stderr, "Expected %s on line %zu\n", message, peek_parser(parser, -1)->line_number);
+        fprintf(stderr, "Expected %s on line %zu\n", message, peek_parser(parser, 0)->line_number);
     } else {
         fprintf(stderr, "Expected %s on line %zu\n", message, peek_parser(parser, 0)->line_number);
     }

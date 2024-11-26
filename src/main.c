@@ -14,7 +14,7 @@
 // add logging to console
 // add relational operators (==, !=, >, <, >=, <=)
 // add logical operators (&&, ||, !)
-// add arithmetic operators (%, ++, --)
+// add arithmetic operators (%, ++, --, **)
 // add for loops and while loops
 // add functions
 // add arrays
