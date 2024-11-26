@@ -56,16 +56,16 @@ typedef struct NodeStatementExit {
     NodeExpression *expression;
 } NodeStatementExit;
 
-typedef enum NodeStatementFieldType {
+typedef enum NodeStatementDeclarationType {
     NODE_STATEMENT_FIELD_LET = LET,
     NODE_STATEMENT_FIELD_CONST = CONST
-} NodeStatementFieldType;
+} NodeStatementDeclarationType;
 
-typedef struct NodeStatementField {
+typedef struct NodeStatementDeclaration {
     Token *identifier;
     NodeExpression *expression;
-    NodeStatementFieldType field_type;
-} NodeStatementField;
+    NodeStatementDeclarationType declaration_type;
+} NodeStatementDeclaration;
 
 typedef enum NodeStatementType {
     NODE_STATEMENT_EXIT = EXIT,
@@ -138,7 +138,7 @@ int get_binary_precedence(const TokenType token_type);
 BinaryExpression *create_binary_expression(NodeExpression *left_hand_side, NodeExpression *right_hand_side);
 NodeBinaryExpression *create_node_binary_expression(BinaryExpression *expression, NodeBinaryExpressionType binary_expression_type);
 NodeStatementExit *create_node_statement_exit(NodeExpression *expression);
-NodeStatementField *create_node_statement_field(Token *identifier, NodeExpression *expression, NodeStatementFieldType field_type);
+NodeStatementDeclaration *create_node_statement_declaration(Token *identifier, NodeExpression *expression, NodeStatementDeclarationType declaration_type);
 NodeStatementAssignment *create_node_statement_assignment(Token *token, NodeExpression *expression);
 NodeStatementIf *create_node_statement_if(NodeExpression *expression, NodeScope *scope);
 NodeStatement *create_node_statement(Parser *parser, NodeExpression *expression, Token *identifier, NodeScope *scope, NodeStatementType statement_type);

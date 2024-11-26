@@ -12,6 +12,9 @@
 /*** TODOs ***/
 // add types (String, int, float, char, bool)
 // add logging to console
+// add relational operators (==, !=, >, <, >=, <=)
+// add logical operators (&&, ||, !)
+// add arithmetic operators (%, ++, --)
 // add for loops and while loops
 // add functions
 // add arrays

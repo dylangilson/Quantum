@@ -5,17 +5,18 @@
 - [Features](#features)
 - [Syntax](#syntax)
 - [Compilation and Running](#compilation-and-running)
-- [Dependencies](#dependencies)
+- [Dependencies and C-Libraries](#dependencies-and-c-libraries)
+- [Dependency Installation](#dependency-installation)
 - [License](#license)
 
 ## Quantum Compiler
-Quantum is a compiler for a custom C-like programming language
+Quantum is a compiler for a custom C-style programming language
 
 ## Features
 * Let and Const
 * Addition, Subtraction, Multiplication, and Division
 * If, Elif, and Else Scopes
-* n-ary Expressions
+* N-ary Expressions
 * Single and Multi-line Comments
 * Variable Reassignment
 * Exit
@@ -33,11 +34,29 @@ make
 ./quantum <input.qtm>
 ```
 
-## Dependencies
+* IMPORTANT: Only runs on Linux Operating System Distributions
+
+## Dependencies and C-Libraries
+### Dependencies
+* gcc
+* nasm
+* binutils (for ld linker)
+
+### C-Libraries
 * <stdio.h>
 * <stdlib.h>
 * <string.h>
 * <ctype.h>
+
+## Dependency Installation
+* Debian Linux Distributions (e.g. Ubuntu):
+	- install gcc, nasm, and binutils using commands: 
+
+```sh
+sudo apt install gcc
+sudo apt install nasm
+sudo apt install binutils
+```
 
 ## License
 Eliseo Copyright 2023

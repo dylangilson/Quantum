@@ -6,7 +6,7 @@ $$
     \begin{cases}
         \text{exit}([\text{Expression}]);
         \\
-        \text{[Field]} = [\text{Expression}];
+        \text{[Declaration]}\space\text{identifier} = [\text{Expression}];
         \\
         \text{identifier} = \text{[Expression]};
         \\
@@ -15,29 +15,20 @@ $$
         [\text{Scope}]
     \end{cases}
     \\
-    \text{[Field]} &\to
-    \begin{cases}
-        \text{let}\space\text{identifier}
-        \\
-        \text{const}\space\text{identifier}
-    \end{cases}
-    \\
-    \text{[Scope]} &\to \{{[\text{Statement}]^*}\}
-    \\
-    \text{[IfPredicate]} &\to
-    \begin{cases}
-        \text{elif\text({[Expression]})\text{[Scope]}\text{[IfPredicate]}}
-        \\
-        \text{else}\text{[Scope]}
-        \\
-        \epsilon
-    \end{cases}
-    \\
     [\text{Expression}] &\to
     \begin{cases}
         [\text{Term}]
         \\
         [\text{BinaryExpression}]
+    \end{cases}
+    \\
+    [\text{Term}] &\to
+    \begin{cases}
+        \text{integer\_literal}
+        \\
+        \text{identifier}
+        \\
+        ([\text{Expression}])
     \end{cases}
     \\
     [\text{BinaryExpression}] &\to
@@ -51,14 +42,22 @@ $$
         [\text{Expression}] - [\text{Expression}] & \text{precedence} = 0
     \end{cases}
     \\
-    [\text{Term}] &\to
+    \text{[Declaration]} &\to
     \begin{cases}
-        \text{integer\_literal}
+        \text{let}
         \\
-        \text{identifier}
-        \\
-        ([\text{Expression}])
+        \text{const}
     \end{cases}
-    
+    \\
+    \text{[Scope]} &\to \{{[\text{Statement}]^*}\}
+    \\
+    \text{[IfPredicate]} &\to
+    \begin{cases}
+        \text{elif\text({[Expression]})\text{[Scope]}\text{[IfPredicate]}}
+        \\
+        \text{else}\text{[Scope]}
+        \\
+        \epsilon
+    \end{cases}   
 \end{align}
 $$

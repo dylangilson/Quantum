@@ -91,14 +91,14 @@ NodeStatementExit *create_node_statement_exit(NodeExpression *expression) {
     return exit_statement;
 }
 
-// create field statement node
-NodeStatementField *create_node_statement_field(Token *token, NodeExpression *expression, NodeStatementFieldType field_type) {
-    NodeStatementField *field_statement = (NodeStatementField *)malloc(sizeof(NodeStatementField));
-    field_statement->identifier = token;
-    field_statement->expression = expression;
-    field_statement->field_type = field_type;
+// create declaration statement node
+NodeStatementDeclaration *create_node_statement_declaration(Token *token, NodeExpression *expression, NodeStatementDeclarationType declaration_type) {
+    NodeStatementDeclaration *declaration_statement = (NodeStatementDeclaration *)malloc(sizeof(NodeStatementDeclaration));
+    declaration_statement->identifier = token;
+    declaration_statement->expression = expression;
+    declaration_statement->declaration_type = declaration_type;
 
-    return field_statement;
+    return declaration_statement;
 }
 
 // create if statement node
@@ -126,9 +126,9 @@ NodeStatement *create_node_statement(Parser *parser, NodeExpression *expression,
     if (statement_type == NODE_STATEMENT_EXIT) {
         statement->statement = create_node_statement_exit(expression);
     } else if (statement_type == NODE_STATEMENT_LET) {
-        statement->statement = create_node_statement_field(identifier, expression, NODE_STATEMENT_FIELD_LET);
+        statement->statement = create_node_statement_declaration(identifier, expression, NODE_STATEMENT_FIELD_LET);
     } else if (statement_type == NODE_STATEMENT_CONST) {
-        statement->statement = create_node_statement_field(identifier, expression, NODE_STATEMENT_FIELD_CONST);
+        statement->statement = create_node_statement_declaration(identifier, expression, NODE_STATEMENT_FIELD_CONST);
     } else if (statement_type == NODE_STATEMENT_ASSIGNMENT) {
         statement->statement = create_node_statement_assignment(identifier, expression);
     } else if (statement_type == NODE_STATEMENT_IF) {
@@ -503,6 +503,11 @@ Token *try_consume_parser(Parser *parser, const TokenType token_type) {
 
 // parser error on line x
 void parser_error(Parser parser, const char *message) {
-    fprintf(stderr, "Expected %s on line %zu\n", message, peek_parser(parser, -1)->line_number);
+    if (peek_parser(parser, -1) != NULL) {
+        fprintf(stderr, "Expected %s on line %zu\n", message, peek_parser(parser, -1)->line_number);
+    } else {
+        fprintf(stderr, "Expected %s on line %zu\n", message, peek_parser(parser, 0)->line_number);
+    }
+    
     exit(EXIT_FAILURE);
 }

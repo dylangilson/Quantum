@@ -10,7 +10,7 @@
 
 typedef struct Variable {
     char *identifier;
-    NodeStatementFieldType field_type;
+    NodeStatementDeclarationType declaration_type;
     size_t stack_location;
 } Variable;
 
@@ -26,7 +26,7 @@ typedef struct Generator {
 } Generator;
 
 Generator *create_generator(NodeProgram *program, char *buffer);
-Variable *create_variable(char *identifier, NodeStatementFieldType field_type, size_t stack_location);
+Variable *create_variable(char *identifier, NodeStatementDeclarationType declaration_type, size_t stack_location);
 char *create_label(Generator *generator);
 Variable *find_variable(Generator *generator, char *identifier);
 void generate_label(Generator *generator);

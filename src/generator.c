@@ -24,11 +24,11 @@ Generator *create_generator(NodeProgram *program, char *buffer) {
 }
 
 // create variable
-Variable *create_variable(char *identifier, NodeStatementFieldType field_type, size_t stack_location) {
+Variable *create_variable(char *identifier, NodeStatementDeclarationType declaration_type, size_t stack_location) {
     Variable *variable = (Variable *)malloc(sizeof(Variable));
     variable->identifier = (char *)malloc(BUFFER_CAPACITY * sizeof(char));
     strcpy(variable->identifier, identifier);
-    variable->field_type = field_type;
+    variable->declaration_type = declaration_type;
     variable->stack_location = stack_location;
 
     return variable;
@@ -257,8 +257,8 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         pop(generator, "rdi"); // pop expression value into rdi
         strcat(generator->buffer, "    syscall\n\n");
     } else if (statement->statement_type == NODE_STATEMENT_LET) {
-        NodeStatementField *field_statement = (NodeStatementField *)statement->statement;
-        Token *identifier = (Token *)field_statement->identifier;
+        NodeStatementDeclaration *declaration_statement = (NodeStatementDeclaration *)statement->statement;
+        Token *identifier = (Token *)declaration_statement->identifier;
         
         Variable *temp = find_variable(generator, (char *)identifier->value);
 
@@ -276,13 +276,13 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         generator->variables[generator->variable_count++] = variable;
 
-        generate_expression(generator, field_statement->expression); // evaulate expression
+        generate_expression(generator, declaration_statement->expression); // evaulate expression
 
         free(identifier->value);
-        free(field_statement);
+        free(declaration_statement);
     } else if (statement->statement_type == NODE_STATEMENT_CONST) {
-        NodeStatementField *field_statement = (NodeStatementField *)statement->statement;
-        Token *identifier = (Token *)field_statement->identifier;
+        NodeStatementDeclaration *declaration_statement = (NodeStatementDeclaration *)statement->statement;
+        Token *identifier = (Token *)declaration_statement->identifier;
         
         Variable *temp = find_variable(generator, (char *)identifier->value);
 
@@ -300,10 +300,10 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         generator->variables[generator->variable_count++] = variable;
 
-        generate_expression(generator, field_statement->expression); // evaulate expression
+        generate_expression(generator, declaration_statement->expression); // evaulate expression
 
         free(identifier->value);
-        free(field_statement);
+        free(declaration_statement);
     } else if (statement->statement_type == NODE_STATEMENT_ASSIGNMENT) {
         NodeStatementAssignment *assignment_statement = (NodeStatementAssignment *)statement->statement;
         Token *identifier = (Token *)assignment_statement->identifier;
@@ -316,9 +316,9 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
             exit(EXIT_FAILURE);
         }
 
-        // attempt to reassign a const field
-        if (temp->field_type == NODE_STATEMENT_FIELD_CONST) {
-            fprintf(stderr, "Attempt to reassign a const field: %s on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
+        // attempt to reassign a const declaration
+        if (temp->declaration_type == NODE_STATEMENT_FIELD_CONST) {
+            fprintf(stderr, "Attempt to reassign a const declaration: %s on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
         }
 
         strcat(generator->buffer, "    ; reassignment of variable: ");
