@@ -10,7 +10,7 @@ $$
         \\
         \text{identifier} = \text{[Expression]};
         \\
-        \text{if} ([\text{Expression}])[\text{Scope}]\text{[IfPredicate]}
+        \text{if}\space([\text{Expression}])\space[\text{Scope}]\text{[IfPredicate]}
         \\
         [\text{Scope}]
     \end{cases}
@@ -33,13 +33,13 @@ $$
     \\
     [\text{BinaryExpression}] &\to
     \begin{cases}
-        [\text{Expression}] * \ [\text{Expression}] & \text{precedence} = 1
+        [\text{Expression}]\space*\space[\text{Expression}] & \text{precedence} = 1
         \\
-        [\text{Expression}] \ / \ \ [\text{Expression}] & \text{precedence} = 1
+        [\text{Expression}]\space\space/\space\space[\text{Expression}] & \text{precedence} = 1
         \\
-        [\text{Expression}] + [\text{Expression}] & \text{precedence} = 0
+        [\text{Expression}]\space+\space[\text{Expression}] & \text{precedence} = 0
         \\
-        [\text{Expression}] - [\text{Expression}] & \text{precedence} = 0
+        [\text{Expression}]\space-\space[\text{Expression}] & \text{precedence} = 0
     \end{cases}
     \\
     \text{[Declaration]} &\to

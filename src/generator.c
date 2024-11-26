@@ -400,7 +400,11 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
 // generate x86-64 assembly from input program
 void generate_program(Generator *generator) {
-    strcat(generator->buffer, "global _start\n\n_start:\n"); // default x86-64 boiler plate code
+    // default x86-64 boiler plate code
+    strcat(generator->buffer, "section .data\n");
+    strcat(generator->buffer, "FALSE equ 0\n\n");
+    strcat(generator->buffer, "section .text\n");
+    strcat(generator->buffer, "global _start\n\n_start:\n");
 
     for (size_t i = 0; i < generator->program->program_length; i++) {
         NodeStatement *statement = generator->program->statements[i];
