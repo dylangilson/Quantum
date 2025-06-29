@@ -16,6 +16,7 @@ Generator *create_generator(NodeProgram *program, char *buffer) {
     generator->program = program;
     generator->buffer = buffer;
     generator->variable_count = 0;
+    generator->global_variable_count = 0;
     generator->scope_count = 0;
     generator->stack_size = 0;
     generator->label_count = 0;
@@ -29,7 +30,12 @@ Variable *create_variable(char *identifier, NodeStatementDeclarationType declara
     variable->identifier = (char *)malloc(BUFFER_CAPACITY * sizeof(char));
     strcpy(variable->identifier, identifier);
     variable->declaration_type = declaration_type;
-    variable->stack_location = stack_location;
+
+    if (declaration_type != NODE_STATEMENT_DECLARATION_CONST) {
+        variable->stack_location = stack_location;
+    } else {
+        variable->stack_location = BUFFER_CAPACITY;
+    }
 
     return variable;
 }
@@ -51,14 +57,161 @@ char *create_label(Generator *generator) {
 }
 
 // find variable in array
-Variable *find_variable(Generator *generator, char *identifier) {
+Variable *find_variable(Generator *generator, const char *identifier) {
     for (size_t i = 0; i < generator->variable_count; i++) {
         if (strcmp(generator->variables[i]->identifier, identifier) == 0) {
             return generator->variables[i];
         }
     }
 
+    for (size_t i = 0; i < generator->global_variable_count; i++) {
+        if (strcmp(generator->global_variables[i]->identifier, identifier) == 0) {
+            return generator->global_variables[i];
+        }
+    }
+
     return NULL;
+}
+
+// evaluate term
+long evaluate_term(Generator *generator, NodeTerm *term, const char *global_identifier) {
+    long value;
+
+    if (term->term_type == NODE_TERM_INTEGER_LITERAL) {
+        Token *integer_literal = term->value;
+        value = (long)integer_literal->value;
+    } else if (term->term_type == NODE_TERM_IDENTIFIER) {
+        Token *identifier = term->value;
+
+        Variable *variable = find_variable(generator, (char *)identifier->value);
+
+        if (variable == NULL) {
+            fprintf(stderr, "Identifier: %s not declared before attempted access on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
+            exit(EXIT_FAILURE);
+        }
+
+        char *reg = (char *)malloc(BUFFER_CAPACITY * sizeof(char));
+        memset(reg, 0, BUFFER_CAPACITY);
+
+        char offset[BUFFER_CAPACITY];
+        memset(offset, 0, BUFFER_CAPACITY);
+
+        strcat(reg, "QWORD [rsp + ");
+        snprintf(offset, sizeof(offset), "%zu", (generator->stack_size - variable->stack_location - 1) * 8); // 8 bytes -> 64 bits
+        strcat(reg, offset);
+        strcat(reg, "]\n");
+
+        push(generator, reg);
+        pop(generator, "rax");
+
+        strcat(generator->buffer, "    mov [");
+        strcat(generator->buffer, global_identifier);
+        strcat(generator->buffer, "], rax\n");
+
+        free(reg);
+        free(identifier->value);
+    } else if (term->term_type == NODE_TERM_PARENTHESIS) {
+        // NodeTermParenthesis *parenthesis_term = (NodeTermParenthesis *)term->value;
+
+        // generate_expression(generator, parenthesis_term->expression);
+
+        // free(parenthesis_term);
+    } else {
+        fprintf(stderr, "Invalid NodeTermType\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return value;
+}
+
+// evaluate expression
+long evaluate_expression(Generator *generator, NodeExpression *expression, const char *global_identifier) {
+    long value;
+
+    if (expression->expression_type == NODE_EXPRESSION_TERM) {
+        NodeTerm *term = (NodeTerm *)expression->expression;
+
+        value = evaluate_term(generator, term, global_identifier);
+
+        free(term);
+    } else if (expression->expression_type == NODE_EXPRESSION_BINARY) {
+        NodeBinaryExpression *binary_expression_node = (NodeBinaryExpression *)expression->expression;
+        BinaryExpression *binary_expression = binary_expression_node->expression;
+
+        // generate_expression(generator, binary_expression->right_hand_side);
+        // generate_expression(generator, binary_expression->left_hand_side);
+        
+        // pop(generator, "rax");
+        // pop(generator, "rbx");
+
+        // if (binary_expression_node->binary_expression_type == NODE_BINARY_MULTIPLICATION) {
+        //     strcat(generator->buffer, "    mul rbx\n");
+        // } else if (binary_expression_node->binary_expression_type == NODE_BINARY_DIVISION) {
+        //     strcat(generator->buffer, "    div rbx\n");
+        // } else if (binary_expression_node->binary_expression_type == NODE_BINARY_ADDITION) {
+        //     strcat(generator->buffer, "    add rax, rbx\n");
+        // } else if (binary_expression_node->binary_expression_type == NODE_BINARY_SUBTRACTION) {
+        //     strcat(generator->buffer, "    sub rax, rbx\n");
+        // }
+
+        // push(generator, "rax");
+        // strcat(generator->buffer, "\n");
+
+        free(binary_expression);
+        free(binary_expression_node);
+    } else {
+        fprintf(stderr, "Invalid NodeExpressionType\n");
+        exit(EXIT_FAILURE);
+    }
+
+    free(expression);
+
+    return value;
+}
+
+// generate global
+void generate_global(Generator *generator, NodeStatementDeclaration *declaration_statement) {
+    char *data_section_start = NULL;
+    char *data_section_end = NULL;
+    char *current_position = generator->buffer;
+
+    // find section .data
+    while ((current_position = strstr(current_position, "section .data")) != NULL) {
+        data_section_start = current_position;
+        current_position += strlen("section .data");
+    }
+
+    if (data_section_start == NULL) {
+        fprintf(stderr, "section .data was not found\n");
+        exit(EXIT_FAILURE);
+    }
+
+    data_section_end = strstr(data_section_start, "\n\n");
+
+    if (data_section_end == NULL) {
+        fprintf(stderr, "end of section .data was not found\n");
+        exit(EXIT_FAILURE);
+    }
+
+    char buffer[BUFFER_CAPACITY];
+
+    strncpy(buffer, generator->buffer, data_section_start - generator->buffer);
+    buffer[data_section_start - generator->buffer] = '\0';
+    strncat(buffer, data_section_start, data_section_end - data_section_start);
+    strcat(buffer, "\n");
+    strcat(buffer, (char *)declaration_statement->identifier->value);
+    strcat(buffer, " dq ");
+
+    long expression_value = evaluate_expression(generator, declaration_statement->expression, (char *)declaration_statement->identifier->value);
+
+    char value[BUFFER_CAPACITY];
+    memset(value, 0, BUFFER_CAPACITY);
+    snprintf(value, sizeof(value), "%ld", expression_value);
+
+    strcat(buffer, value);
+    strncat(buffer, data_section_end, strlen(data_section_end));
+
+    strcpy(generator->buffer, buffer);
 }
 
 // generate label
@@ -76,18 +229,26 @@ void generate_label(Generator *generator) {
 // generate term
 void generate_term(Generator *generator, NodeTerm *term) {
     if (term->term_type == NODE_TERM_INTEGER_LITERAL) {
-        strcat(generator->buffer, "    mov rax, ");
-
         // concatenate integer literal
         Token *integer_literal = term->value;
         long value = (long)integer_literal->value;
         char value_as_string[BUFFER_CAPACITY];
+
         memset(value_as_string, 0, BUFFER_CAPACITY);
         snprintf(value_as_string, sizeof(value_as_string), "%ld", value);
 
+        strcat(generator->buffer, "    ; generate term: ");
         strcat(generator->buffer, value_as_string);
         strcat(generator->buffer, "\n");
+
+        strcat(generator->buffer, "    mov rax, ");
+        strcat(generator->buffer, value_as_string);
+        strcat(generator->buffer, "\n");
+
         push(generator, "rax"); // push value in rax onto stack
+
+        strcat(generator->buffer, "    ; end of generate term: ");
+        strcat(generator->buffer, value_as_string);
         strcat(generator->buffer, "\n");
     } else if (term->term_type == NODE_TERM_IDENTIFIER) {
         Token *identifier = term->value;
@@ -101,8 +262,13 @@ void generate_term(Generator *generator, NodeTerm *term) {
 
         char *reg = (char *)malloc(BUFFER_CAPACITY * sizeof(char));
         memset(reg, 0, BUFFER_CAPACITY);
+
         char offset[BUFFER_CAPACITY];
         memset(offset, 0, BUFFER_CAPACITY);
+
+        strcat(generator->buffer, "    ; generate term: ");
+        strcat(generator->buffer, (char *)identifier->value);
+        strcat(generator->buffer, "\n");
 
         strcat(reg, "QWORD [rsp + ");
         snprintf(offset, sizeof(offset), "%zu", (generator->stack_size - variable->stack_location - 1) * 8); // 8 bytes -> 64 bits
@@ -110,6 +276,10 @@ void generate_term(Generator *generator, NodeTerm *term) {
         strcat(reg, "]");
 
         push(generator, reg);
+
+        strcat(generator->buffer, "    ; end of generate term: ");
+        strcat(generator->buffer, (char *)identifier->value);
+        strcat(generator->buffer, "\n\n");
 
         free(reg);
         free(identifier->value);
@@ -169,6 +339,7 @@ void generate_expression(Generator *generator, NodeExpression *expression) {
 // generate scope
 void generate_scope(Generator *generator, NodeScope *scope) {
     begin_scope(generator);
+    
     size_t index = 0;
 
     while (TRUE) {
@@ -201,6 +372,7 @@ void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, 
 
         strcat(generator->buffer, "    test rax, rax\n");
         strcat(generator->buffer, "    jz ");
+
         if (predicate->if_predicate != NULL) {
             strcat(generator->buffer, label);
         } else {
@@ -250,8 +422,6 @@ void generate_if_predicate(Generator *generator, NodeIfPredicate *if_predicate, 
 // generate statement
 void generate_statement(Generator *generator, NodeStatement *statement) {
     if (statement->statement_type == NODE_STATEMENT_EXIT) {
-        strcat(generator->buffer, "    ; exit\n");
-
         NodeStatementExit *exit_statement = (NodeStatementExit *)statement->statement;
         NodeExpression *expression = (NodeExpression *)exit_statement->expression;
 
@@ -259,9 +429,13 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         free(exit_statement);
 
+        strcat(generator->buffer, "    ; exit\n");
+
         strcat(generator->buffer, "    mov rax, 60\n"); // 60 -> exit syscall
         pop(generator, "rdi"); // pop expression value into rdi
-        strcat(generator->buffer, "    syscall\n\n");
+        strcat(generator->buffer, "    syscall\n");
+
+        strcat(generator->buffer, "    ; end of exit\n\n");
     } else if (statement->statement_type == NODE_STATEMENT_LET) {
         NodeStatementDeclaration *declaration_statement = (NodeStatementDeclaration *)statement->statement;
         Token *identifier = (Token *)declaration_statement->identifier;
@@ -278,11 +452,15 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         strcat(generator->buffer, (char *)identifier->value);
         strcat(generator->buffer, "\n");
 
-        Variable *variable = create_variable((char *)identifier->value, NODE_STATEMENT_FIELD_LET, generator->stack_size);
+        Variable *variable = create_variable((char *)identifier->value, NODE_STATEMENT_DECLARATION_LET, generator->stack_size);
 
         generator->variables[generator->variable_count++] = variable;
 
         generate_expression(generator, declaration_statement->expression); // evaulate expression
+
+        strcat(generator->buffer, "    ; end of let declaration of variable: ");
+        strcat(generator->buffer, (char *)identifier->value);
+        strcat(generator->buffer, "\n\n");
 
         free(identifier->value);
         free(declaration_statement);
@@ -302,11 +480,35 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         strcat(generator->buffer, (char *)identifier->value);
         strcat(generator->buffer, "\n");
 
-        Variable *variable = create_variable((char *)identifier->value, NODE_STATEMENT_FIELD_CONST, generator->stack_size);
+        Variable *variable = create_variable((char *)identifier->value, NODE_STATEMENT_DECLARATION_CONST, generator->stack_size);
 
         generator->variables[generator->variable_count++] = variable;
 
         generate_expression(generator, declaration_statement->expression); // evaulate expression
+
+        strcat(generator->buffer, "    ; end of const declaration of variable: ");
+        strcat(generator->buffer, (char *)identifier->value);
+        strcat(generator->buffer, "\n");
+
+        free(identifier->value);
+        free(declaration_statement);
+    } else if (statement->statement_type == NODE_STATEMENT_VAR) {
+        NodeStatementDeclaration *declaration_statement = (NodeStatementDeclaration *)statement->statement;
+        Token *identifier = (Token *)declaration_statement->identifier;
+        
+        Variable *temp = find_variable(generator, (char *)identifier->value);
+
+        // identifier already declared
+        if (temp != NULL) {
+            fprintf(stderr, "Identifier: %s already declared before attempted re-declaration on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
+            exit(EXIT_FAILURE);
+        }
+
+        generate_global(generator, declaration_statement);
+
+        Variable *variable = create_variable((char *)identifier->value, NODE_STATEMENT_DECLARATION_VAR, 0);
+
+        generator->global_variables[generator->global_variable_count++] = variable;
 
         free(identifier->value);
         free(declaration_statement);
@@ -323,7 +525,7 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
         }
 
         // attempt to reassign a const declaration
-        if (temp->declaration_type == NODE_STATEMENT_FIELD_CONST) {
+        if (temp->declaration_type == NODE_STATEMENT_DECLARATION_CONST) {
             fprintf(stderr, "Attempt to reassign a const declaration: %s on line %zu\n", (char *)identifier->value, (size_t)identifier->line_number);
         }
 
@@ -341,7 +543,11 @@ void generate_statement(Generator *generator, NodeStatement *statement) {
 
         strcat(generator->buffer, "    mov [rsp + ");
         strcat(generator->buffer, count);
-        strcat(generator->buffer, "], rax\n\n");
+        strcat(generator->buffer, "], rax\n");
+
+        strcat(generator->buffer, "    ; end of reassignment of variable: ");
+        strcat(generator->buffer, (char *)identifier->value);
+        strcat(generator->buffer, "\n\n");
 
         free(identifier->value);
         free(assignment_statement);
@@ -418,14 +624,15 @@ void generate_program(Generator *generator) {
         free(statement);
     }
 
-    // default exit with code 0
+    strcat(generator->buffer, "    ; default exit with code 0\n");
+
     strcat(generator->buffer, "    mov rax, 60\n"); // 60 -> exit syscall
     strcat(generator->buffer, "    mov rdi, 0\n"); // exit code 0
     strcat(generator->buffer, "    syscall\n");
 }
 
 // push value in register onto stack
-void push(Generator *generator, char *reg) {
+void push(Generator *generator, const char *reg) {
     strcat(generator->buffer, "    push ");
     strcat(generator->buffer, reg);
     strcat(generator->buffer, "\n");
@@ -434,7 +641,7 @@ void push(Generator *generator, char *reg) {
 }
 
 // pop value from stack into register
-void pop(Generator *generator, char *reg) {
+void pop(Generator *generator, const char *reg) {
     strcat(generator->buffer, "    pop ");
     strcat(generator->buffer, reg);
     strcat(generator->buffer, "\n");
@@ -473,6 +680,11 @@ void free_generator(Generator *generator) {
     for (size_t i = 0; i < generator->variable_count; i++) {
         free(generator->variables[i]->identifier);
         free(generator->variables[i]);
+    }
+
+    for (size_t i = 0; i < generator->global_variable_count; i++) {
+        free(generator->global_variables[i]->identifier);
+        free(generator->global_variables[i]);
     }
 
     free(generator);

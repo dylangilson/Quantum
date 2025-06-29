@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <string.h>
+
 #include "linked_list.h"
 
 #define MAX_PRECEDENCE 100
@@ -57,8 +59,9 @@ typedef struct NodeStatementExit {
 } NodeStatementExit;
 
 typedef enum NodeStatementDeclarationType {
-    NODE_STATEMENT_FIELD_LET = LET,
-    NODE_STATEMENT_FIELD_CONST = CONST
+    NODE_STATEMENT_DECLARATION_LET = LET,
+    NODE_STATEMENT_DECLARATION_CONST = CONST,
+    NODE_STATEMENT_DECLARATION_VAR = VAR
 } NodeStatementDeclarationType;
 
 typedef struct NodeStatementDeclaration {
@@ -71,6 +74,7 @@ typedef enum NodeStatementType {
     NODE_STATEMENT_EXIT = EXIT,
     NODE_STATEMENT_LET = LET,
     NODE_STATEMENT_CONST = CONST,
+    NODE_STATEMENT_VAR = VAR,
     NODE_STATEMENT_SCOPE = OPEN_BRACKET,
     NODE_STATEMENT_IF = IF,
     NODE_STATEMENT_ASSIGNMENT

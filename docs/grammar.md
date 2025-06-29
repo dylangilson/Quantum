@@ -47,6 +47,8 @@ $$
         \text{let}
         \\
         \text{const}
+        \\
+        \text{var}
     \end{cases}
     \\
     \text{[Scope]} &\to \{{[\text{Statement}]^*}\}

@@ -10,6 +10,7 @@
 // ./output; echo $?
 
 /*** TODOs ***/
+// finish var
 // add types (String, int, float, char, bool)
 // add logging to console
 // add relational operators (==, !=, >, <, >=, <=)

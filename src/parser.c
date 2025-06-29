@@ -126,9 +126,11 @@ NodeStatement *create_node_statement(Parser *parser, NodeExpression *expression,
     if (statement_type == NODE_STATEMENT_EXIT) {
         statement->statement = create_node_statement_exit(expression);
     } else if (statement_type == NODE_STATEMENT_LET) {
-        statement->statement = create_node_statement_declaration(identifier, expression, NODE_STATEMENT_FIELD_LET);
+        statement->statement = create_node_statement_declaration(identifier, expression, NODE_STATEMENT_DECLARATION_LET);
     } else if (statement_type == NODE_STATEMENT_CONST) {
-        statement->statement = create_node_statement_declaration(identifier, expression, NODE_STATEMENT_FIELD_CONST);
+        statement->statement = create_node_statement_declaration(identifier, expression, NODE_STATEMENT_DECLARATION_CONST);
+    } else if (statement_type == NODE_STATEMENT_VAR) {
+        statement->statement = create_node_statement_declaration(identifier, expression, NODE_STATEMENT_DECLARATION_VAR);
     } else if (statement_type == NODE_STATEMENT_ASSIGNMENT) {
         statement->statement = create_node_statement_assignment(identifier, expression);
     } else if (statement_type == NODE_STATEMENT_IF) {
@@ -341,6 +343,10 @@ NodeStatement *parse_statement(Parser *parser) {
         consume_parser(parser); // consume let
 
         Token *identifier = try_consume_parser(parser, IDENTIFIER); // consume identifier
+
+        if (strcmp((char *)identifier->value, "TRUE") == 0 || strcmp((char *)identifier->value, "FALSE") == 0) {
+            parser_error(*parser, "expression");
+        }
         
         try_consume_parser(parser, EQUALS); // consume '='
 
@@ -357,6 +363,10 @@ NodeStatement *parse_statement(Parser *parser) {
         consume_parser(parser); // consume const
 
         Token *identifier = try_consume_parser(parser, IDENTIFIER); // consume identifier
+
+        if (strcmp((char *)identifier->value, "TRUE") == 0 || strcmp((char *)identifier->value, "FALSE") == 0) {
+            parser_error(*parser, "expression");
+        }
         
         try_consume_parser(parser, EQUALS); // consume '='
 
@@ -369,6 +379,26 @@ NodeStatement *parse_statement(Parser *parser) {
         try_consume_parser(parser, SEMICOLON); // consume ';'
 
         statement = create_node_statement(parser, expression, identifier, NULL, NODE_STATEMENT_CONST);
+    } else if (peek_parser(*parser, 0)->token_type == VAR) {
+        consume_parser(parser); // consume var
+
+        Token *identifier = try_consume_parser(parser, IDENTIFIER); // consume identifier
+
+        if (strcmp((char *)identifier->value, "TRUE") == 0 || strcmp((char *)identifier->value, "FALSE") == 0) {
+            parser_error(*parser, "expression");
+        }
+        
+        try_consume_parser(parser, EQUALS); // consume '='
+
+        NodeExpression *expression = parse_expression(parser, 0);
+
+        if (expression == NULL) {
+            parser_error(*parser, "expression");
+        }
+
+        try_consume_parser(parser, SEMICOLON); // consume ';'
+
+        statement = create_node_statement(parser, expression, identifier, NULL, NODE_STATEMENT_VAR);
     } else if (peek_parser(*parser, 0)->token_type == IDENTIFIER) {
         Token *identifier = consume_parser(parser); // consume identifier
 

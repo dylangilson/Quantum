@@ -25,6 +25,7 @@ typedef enum TokenType {
     IDENTIFIER,
     LET,
     CONST,
+    VAR,
     EQUALS,
     PLUS,
     MINUS,

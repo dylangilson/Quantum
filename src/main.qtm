@@ -1,0 +1,52 @@
+/* let x = (10 + 3 * 2) / (2 * 2) / (2 + 2) * 4;
+let y = x + 1; // first comment
+let z = 7;
+
+{
+    var a = 5;
+}
+
+a = 10;
+
+let output = 0;
+const alpha = 5;
+// alpha = 15;
+
+if (y - 5) {
+    output = y;
+} elif (y - 4) {
+    output = 1 + x + z;
+} else {
+    output = z + 1;
+}
+
+exit(output);
+*/
+
+/*
+exit(z);
+*/
+
+/*
+let b = 9;
+let c = 5;
+
+var a = 10;
+
+{
+    a = b;
+}
+
+let d = b;
+let e = d;
+
+a = c;
+
+exit(a);
+*/
+
+var a = 10;
+let c = 5;
+a = c;
+
+exit(a);

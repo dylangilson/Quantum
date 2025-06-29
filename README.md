@@ -13,7 +13,7 @@
 Quantum is a compiler for a custom C-style programming language
 
 ## Features
-* Let and Const
+* Let, Const and Var for Variable Declarations
 * Addition, Subtraction, Multiplication, and Division
 * If, Elif, and Else Scopes
 * N-ary Expressions

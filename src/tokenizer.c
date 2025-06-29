@@ -46,7 +46,7 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
             
             // while character is alphanumeric -> append character to buffer
             while (peek_tokenizer(*tokenizer, 0) != '\0' && isalnum(peek_tokenizer(*tokenizer, 0))) {
-                char c = consume_tokenizer(tokenizer); // get character
+                char c = consume_tokenizer(tokenizer); // get next character
                 strncat(tokenizer->buffer, &c, 1);
             }
 
@@ -58,7 +58,10 @@ LinkedList *tokenize(Tokenizer *tokenizer, LinkedList *tokens) {
                 push_tail(tokens, NULL, LET, line_number); // append let token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else if (strcmp(tokenizer->buffer, "const") == 0) {
-                push_tail(tokens, NULL, CONST, line_number); // append let token
+                push_tail(tokens, NULL, CONST, line_number); // append const token
+                memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
+            } else if (strcmp(tokenizer->buffer, "var") == 0) {
+                push_tail(tokens, NULL, VAR, line_number); // append var token
                 memset(tokenizer->buffer, 0, BUFFER_CAPACITY); // clear buffer
             } else if (strcmp(tokenizer->buffer, "if") == 0) {
                 push_tail(tokens, NULL, IF, line_number); // append if token
